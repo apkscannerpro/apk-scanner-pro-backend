@@ -5,28 +5,24 @@ from report_generator import generate_report
 from datetime import datetime
 from replit import db
 
-# 🚫 DO NOT use static_folder="static" to avoid X-Robots-Tag injection
 app = Flask(__name__)
 UPLOAD_DIR = "/tmp"
 MAX_FREE_SCANS_PER_DAY = 300
 
-
-# ✅ Force HTTPS on all requests
+# ✅ Enforce HTTPS (Render supports X-Forwarded-Proto)
 @app.before_request
 def enforce_https():
     if request.headers.get("X-Forwarded-Proto", "http") != "https":
-        url = request.url.replace("http://", "https://", 1)
-        return redirect(url, code=301)
+        return redirect(request.url.replace("http://", "https://", 1), code=301)
 
-
-# ✅ Auto reset scan count at UTC midnight
+# ✅ Reset scan counter daily (UTC)
 def reset_daily_scan_count():
     today = datetime.utcnow().strftime("%Y-%m-%d")
     if db.get("last_reset") != today:
         db["scan_count"] = 0
         db["last_reset"] = today
 
-
+# ✅ Scan endpoint (POST /scan)
 @app.route("/scan", methods=["POST"])
 def scan():
     reset_daily_scan_count()
@@ -34,8 +30,7 @@ def scan():
 
     if count >= MAX_FREE_SCANS_PER_DAY:
         return jsonify({
-            "error":
-            "🛑 Daily free scan limit reached. Please pay to scan more today.",
+            "error": "🛑 Daily free scan limit reached. Please pay to scan more today.",
             "payment_required": True,
             "payment_info": {
                 "bank": "Citibank",
@@ -59,31 +54,23 @@ def scan():
 
     report = generate_report(scan_result)
     db["scan_count"] = count + 1
-    return jsonify({"report": report, "scan_count_today": db["scan_count"]})
+    return jsonify({
+        "report": report,
+        "scan_count_today": db["scan_count"]
+    })
 
-
+# ✅ Scan stats (GET /scan-stats)
 @app.route("/scan-stats", methods=["GET"])
 def scan_stats():
     reset_daily_scan_count()
     return jsonify({
-        "free_scans_remaining":
-        max(0, MAX_FREE_SCANS_PER_DAY - db.get("scan_count", 0)),
-        "scan_count_today":
-        db.get("scan_count", 0),
-        "reset_at_midnight":
-        True
+        "free_scans_remaining": max(0, MAX_FREE_SCANS_PER_DAY - db.get("scan_count", 0)),
+        "scan_count_today": db.get("scan_count", 0),
+        "reset_at_midnight": True
     })
 
-
-# ✅ Serve homepage manually and strip X-Robots-Tag
+# ✅ Serve homepage (GET / and /home)
 @app.route("/", methods=["GET"])
-def root():
-    response = send_file("static/index.html", mimetype="text/html")
-    response.headers["Cache-Control"] = "no-store"
-    response.headers.pop("X-Robots-Tag", None)
-    return response
-
-
 @app.route("/home", methods=["GET"])
 def home():
     response = send_file("static/index.html", mimetype="text/html")
@@ -91,8 +78,7 @@ def home():
     response.headers.pop("X-Robots-Tag", None)
     return response
 
-
-# ✅ Manually serve static files (logo, CSS, JS, etc.)
+# ✅ Manually serve static assets (CSS, JS, images)
 @app.route("/static/<path:filename>")
 def serve_static(filename):
     response = send_file(os.path.join("static", filename))
@@ -100,17 +86,17 @@ def serve_static(filename):
     response.headers.pop("X-Robots-Tag", None)
     return response
 
-
+# ✅ Health check endpoint
 @app.route("/ping", methods=["GET"])
 def ping():
     return "pong"
 
-
+# ✅ SEO files (robots.txt and sitemap.xml)
 @app.route("/robots.txt")
 def robots():
     return send_file("static/robots.txt", mimetype="text/plain")
 
-
 @app.route("/sitemap.xml")
 def sitemap():
     return send_file("static/sitemap.xml", mimetype="application/xml")
+
