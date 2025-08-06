@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: apk-scanner-backend
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 1 -b 0.0.0.0:$PORT apk_scanner_pro.api_server:app
+    autoDeploy: true
