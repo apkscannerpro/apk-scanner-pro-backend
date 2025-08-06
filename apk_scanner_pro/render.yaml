@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: apk-scanner-backend
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: ./start.sh
+    autoDeploy: true
