@@ -3,4 +3,5 @@ services:
     name: apk-scanner-backend
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: bash start.sh
+    startCommand: python apk_scanner_pro/api_server.py
+
