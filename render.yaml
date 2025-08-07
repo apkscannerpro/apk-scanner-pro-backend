@@ -3,6 +3,6 @@ services:
     name: apk-scanner-backend
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python api_server.py
+    buildCommand: cd apk_scanner_pro && pip install -r requirements.txt
+    startCommand: cd apk_scanner_pro && python api_server.py
     autoDeploy: true
