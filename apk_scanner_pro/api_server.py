@@ -110,3 +110,7 @@ def robots():
 @app.route("/sitemap.xml")
 def sitemap():
     return send_file("static/sitemap.xml", mimetype="application/xml")
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
