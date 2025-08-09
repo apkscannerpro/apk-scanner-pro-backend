@@ -1,11 +1,12 @@
-from flask import Flask, request, jsonify, send_file, redirect
+from flask import Flask, request, jsonify, send_file, render_template
 import os
 from scan_worker import scan_apk
 from report_generator import generate_report
 from datetime import datetime
 import json
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static", template_folder="templates")
+
 UPLOAD_DIR = "/tmp"
 MAX_FREE_SCANS_PER_DAY = 300
 SCAN_DATA_FILE = "scan_data.json"
@@ -84,18 +85,7 @@ def scan_stats():
 @app.route("/", methods=["GET"])
 @app.route("/home", methods=["GET"])
 def home():
-    response = send_file("static/index.html", mimetype="text/html")
-    response.headers["Cache-Control"] = "no-store"
-    response.headers.pop("X-Robots-Tag", None)
-    return response
-
-# ✅ Serve static assets
-@app.route("/static/<path:filename>")
-def serve_static(filename):
-    response = send_file(os.path.join("static", filename))
-    response.headers["Cache-Control"] = "no-store"
-    response.headers.pop("X-Robots-Tag", None)
-    return response
+    return render_template("index.html")
 
 # ✅ Health check
 @app.route("/ping", methods=["GET"])
@@ -105,12 +95,11 @@ def ping():
 # ✅ SEO files
 @app.route("/robots.txt")
 def robots():
-    return send_file("static/robots.txt", mimetype="text/plain")
+    return send_file(os.path.join(app.static_folder, "robots.txt"), mimetype="text/plain")
 
 @app.route("/sitemap.xml")
 def sitemap():
-    return send_file("static/sitemap.xml", mimetype="application/xml")
+    return send_file(os.path.join(app.static_folder, "sitemap.xml"), mimetype="application/xml")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
