@@ -6,39 +6,45 @@ from datetime import datetime
 import json
 import logging
 
-# folders are relative to this package path
+# Flask setup
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
-# safer paths for ephemeral Render FS
+# Storage paths (Render uses ephemeral FS, so we put everything under /tmp)
 UPLOAD_DIR = "/tmp"
 SCAN_DATA_FILE = os.path.join("/tmp", "scan_data.json")
 
-# business rules
-MAX_FREE_SCANS_PER_DAY = 200  # your updated daily free limit
+# Business rules
+MAX_FREE_SCANS_PER_DAY = 200  # daily free scan limit
 
-# logging to stdout for Render logs
+# Logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("apk_scanner_pro")
 
-# --- helpers ---
+
+# --- Helpers ---
 def load_scan_data():
+    """Load daily scan stats from /tmp/scan_data.json"""
     if not os.path.exists(SCAN_DATA_FILE):
         return {"scan_count": 0, "last_reset": ""}
     try:
         with open(SCAN_DATA_FILE, "r") as f:
             return json.load(f)
-    except Exception as e:
+    except Exception:
         log.exception("Failed to read scan_data.json; resetting.")
         return {"scan_count": 0, "last_reset": ""}
 
+
 def save_scan_data(data):
+    """Save daily scan stats to /tmp/scan_data.json"""
     try:
         with open(SCAN_DATA_FILE, "w") as f:
             json.dump(data, f)
-    except Exception as e:
+    except Exception:
         log.exception("Failed to write scan_data.json")
 
+
 def reset_daily_scan_count():
+    """Resets count if UTC day changed"""
     data = load_scan_data()
     today = datetime.utcnow().strftime("%Y-%m-%d")
     if data.get("last_reset") != today:
@@ -47,14 +53,18 @@ def reset_daily_scan_count():
         save_scan_data(data)
     return data
 
-# --- routes ---
+
+# --- Routes ---
 @app.route("/", methods=["GET"])
 @app.route("/home", methods=["GET"])
 def home():
+    """Serve frontend landing page"""
     return render_template("index.html")
+
 
 @app.route("/scan-stats", methods=["GET"])
 def scan_stats():
+    """Return remaining free scans for today"""
     data = reset_daily_scan_count()
     return jsonify({
         "free_scans_remaining": max(0, MAX_FREE_SCANS_PER_DAY - data["scan_count"]),
@@ -63,16 +73,20 @@ def scan_stats():
         "limit_per_day": MAX_FREE_SCANS_PER_DAY
     })
 
+
 @app.route("/scan", methods=["POST"])
 def scan():
+    """Handle APK scan request"""
     data = reset_daily_scan_count()
 
+    # Limit check
     if data["scan_count"] >= MAX_FREE_SCANS_PER_DAY:
         return jsonify({
             "error": "Daily free scan limit reached.",
             "payment_required": True
         }), 403
 
+    # Validate file
     if "apk" not in request.files:
         return jsonify({"error": "No APK file uploaded"}), 400
 
@@ -80,19 +94,22 @@ def scan():
     if not apk.filename.lower().endswith(".apk"):
         return jsonify({"error": "File must be an .apk"}), 400
 
+    # Save file under /tmp
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     file_path = os.path.join(UPLOAD_DIR, apk.filename)
     apk.save(file_path)
 
+    # Perform scan
     try:
-        scan_result = scan_apk(file_path)
+        scan_result = scan_apk(file_path)  # calls VirusTotal wrapper
         if isinstance(scan_result, dict) and "error" in scan_result:
             return jsonify(scan_result), 500
         report = generate_report(scan_result)
-    except Exception as e:
+    except Exception:
         log.exception("scan_apk/generate_report crashed")
         return jsonify({"error": "Internal scanning error"}), 500
 
+    # Update stats
     data["scan_count"] += 1
     save_scan_data(data)
 
@@ -101,24 +118,33 @@ def scan():
         "scan_count_today": data["scan_count"]
     })
 
+
 @app.route("/robots.txt")
 def robots():
+    """Serve robots.txt"""
     return send_file(os.path.join(app.static_folder, "robots.txt"), mimetype="text/plain")
+
 
 @app.route("/sitemap.xml")
 def sitemap():
+    """Serve sitemap.xml"""
     return send_file(os.path.join(app.static_folder, "sitemap.xml"), mimetype="application/xml")
+
 
 @app.route("/ping")
 def ping():
+    """Health check for Render"""
     return {"status": "ok"}
 
-# error handlers for cleaner 500s
+
+# --- Error Handling ---
 @app.errorhandler(500)
 def handle_500(e):
     log.exception("Internal server error")
     return jsonify({"error": "Internal Server Error"}), 500
 
+
+# Entry point for Render/Gunicorn
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
