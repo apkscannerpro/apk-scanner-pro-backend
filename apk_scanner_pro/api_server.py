@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_file, render_template
 import os
 from .scan_worker import scan_apk
-from .report_generator import generate_report
+from .report_generator import generate_report, send_report_via_email
 from datetime import datetime
 import json
 import logging
@@ -94,6 +94,9 @@ def scan():
     if not apk.filename.lower().endswith(".apk"):
         return jsonify({"error": "File must be an .apk"}), 400
 
+    # Optional: user email
+    user_email = request.form.get("email")
+
     # Save file under /tmp
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     file_path = os.path.join(UPLOAD_DIR, apk.filename)
@@ -113,9 +116,20 @@ def scan():
     data["scan_count"] += 1
     save_scan_data(data)
 
+    # Try sending email if provided
+    email_status = None
+    if user_email:
+        try:
+            success = send_report_via_email(user_email, scan_result)
+            email_status = "sent" if success else "failed"
+        except Exception:
+            log.exception("Email sending failed")
+            email_status = "failed"
+
     return jsonify({
         "report": report,
-        "scan_count_today": data["scan_count"]
+        "scan_count_today": data["scan_count"],
+        "email_status": email_status
     })
 
 
