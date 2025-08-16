@@ -57,40 +57,6 @@
     .box{background:#0f0f0f;border:1px solid #1b1b1b;border-radius:12px;padding:1rem}
     .ads{min-height:90px;background:#0b0b0b;border:1px dashed #1f1f1f;border-radius:10px;color:#5b7083;display:flex;align-items:center;justify-content:center}
   </style>
-
-  <!-- JSON-LD: SoftwareApplication + FAQ for AEO/SEO -->
-  <script type="application/ld+json">
-  {
-    "@context":"https://schema.org",
-    "@type":"SoftwareApplication",
-    "name":"APK Scanner Pro",
-    "applicationCategory":"SecurityApplication",
-    "operatingSystem":"Android",
-    "offers":{
-      "@type":"Offer",
-      "price":"0.00",
-      "priceCurrency":"USD"
-    },
-    "url":"https://www.apkscannerpro.com/",
-    "description":"AI-powered APK malware scanner. 200 free scans/day per device; paid unlocks for heavy users."
-  }
-  </script>
-  <script type="application/ld+json">
-  {
-    "@context":"https://schema.org",
-    "@type":"FAQPage",
-    "mainEntity":[
-      {"@type":"Question","name":"Is APK Scanner Pro free?","acceptedAnswer":{"@type":"Answer","text":"Yes. You get 200 free scans per day per device/IP. Need more? Unlock extra scans for $0.50 or $1."}},
-      {"@type":"Question","name":"Do you keep my files?","acceptedAnswer":{"@type":"Answer","text":"No. Files are processed securely and discarded after scanning."}},
-      {"@type":"Question","name":"Which engines do you use?","acceptedAnswer":{"@type":"Answer","text":"We use a mix of custom AI signals and multi-engine checks. We recommend installing a trusted AV like Bitdefender for device-level protection."}}
-    ]
-  }
-  </script>
-
-  {% if adsense_id %}
-  <!-- AdSense (will only load if ADSENSE_ID is set) -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ adsense_id }}" crossorigin="anonymous"></script>
-  {% endif %}
 </head>
 <body>
   <header>
@@ -102,7 +68,7 @@
     <p class="lead">AI-powered APK malware scanner. Upload any APK and get an instant verdict. <span class="pill">200 free scans/day</span></p>
     <div class="cta-row">
       <button class="btn" onclick="document.getElementById('scan').scrollIntoView({behavior:'smooth'})">Scan APK Now</button>
-      <a class="cta-alt" href="{{ pay_link }}" target="_blank" rel="noopener">Continue Scanning ($0.50 / $1)</a>
+      <a class="cta-alt" href="#pay_link#" target="_blank" rel="noopener">Continue Scanning ($0.50 / $1)</a>
     </div>
   </header>
 
@@ -130,7 +96,7 @@
       <h2>Scan your APK</h2>
       <div class="notice">
         <div><span class="mono">Free quota today:</span> <span id="quota" class="badge">…</span></div>
-        <div class="muted" style="margin-top:.4rem">Hit the limit? Continue for <strong>$0.50</strong> ({{% raw %}}{{{{ %}}% endraw %}}~{{% raw %}}%{{% endraw %}} {{% raw %}}{{{{ %}}% endraw %}} scans) or <strong>$1</strong> ({{% raw %}}{{{{ %}}% endraw %}}~{{% raw %}}%{{% endraw %}} {{% raw %}}{{{{ %}}% endraw %}} scans). You’ll be auto-unlocked immediately after payment confirmation.</div>
+        <div class="muted" style="margin-top:.4rem">Hit the limit? Continue for <strong>$0.50</strong> (~50 scans) or <strong>$1</strong> (~120 scans). You’ll be auto-unlocked immediately after payment confirmation.</div>
       </div>
 
       <form id="scanForm" style="margin-top:1rem">
@@ -141,7 +107,7 @@
       <div id="report" class="report" style="display:none;margin-top:1rem"></div>
 
       <div class="cta-row" style="margin-top:1rem">
-        <a class="cta-alt" href="{{ pay_link }}" target="_blank" rel="noopener">Continue for $0.50 / $1</a>
+        <a class="cta-alt" href="#pay_link#" target="_blank" rel="noopener">Continue for $0.50 / $1</a>
         <button class="cta-alt" id="ivePaidBtn" title="If you’ve paid, click to unlock now">I’ve paid — unlock scans</button>
       </div>
     </section>
@@ -149,50 +115,22 @@
     <section id="protection">
       <h2>Recommended Protection</h2>
       <p class="muted">Scanner = great before install. For 24/7 device protection, install a trusted AV.</p>
-      <p><a href="{{ bitdefender_aff }}" target="_blank" rel="nofollow noopener">Bitdefender (Affiliate)</a> — industry-leading malware detection with minimal performance hit.</p>
+      <p><a href="#bitdefender_aff#" target="_blank" rel="nofollow noopener">Bitdefender (Affiliate)</a> — industry-leading malware detection with minimal performance hit.</p>
     </section>
 
-    {% if adsense_id %}
-    <section>
-      <h2>Sponsored</h2>
-      <!-- Example ad slot -->
-      <ins class="adsbygoogle"
-           style="display:block"
-           data-ad-client="{{ adsense_id }}"
-           data-ad-slot="0000000000"
-           data-ad-format="auto"
-           data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
-    </section>
-    {% else %}
     <section>
       <h2>Sponsored</h2>
       <div class="ads">Ad space (automatically activates when AdSense ID is configured)</div>
     </section>
-    {% endif %}
 
     <section id="payments" class="box">
       <h2>Payments & Pricing</h2>
       <p><strong>Free:</strong> 200 scans/day per device/IP.</p>
-      <p><strong>Heavy use:</strong> $0.50 → ~{{% raw %}}{{{{ %}}% endraw %}} scans • $1 → ~{{% raw %}}{{{{ %}}% endraw %}} scans.</p>
+      <p><strong>Heavy use:</strong> $0.50 → ~50 scans • $1 → ~120 scans.</p>
       <p>
-        <a class="btn" href="{{ pay_link }}" target="_blank" rel="noopener">Pay Now (Open Checkout)</a>
+        <a class="btn" href="#pay_link#" target="_blank" rel="noopener">Pay Now (Open Checkout)</a>
         <span class="muted" style="margin-left:.6rem">After paying, click <span class="kbd">I’ve paid — unlock scans</span> to continue instantly.</span>
       </p>
-
-      <details style="margin-top:1rem">
-        <summary>Pay by Bank Transfer (Manual)</summary>
-        <ul>
-          <li><strong>Bank:</strong> Citibank</li>
-          <li><strong>Address:</strong> 111 Wall Street New York, NY 10043 USA</li>
-          <li><strong>Routing (ABA):</strong> 031100209</li>
-          <li><strong>SWIFT:</strong> CITIUS33</li>
-          <li><strong>Account #:</strong> 70588660001898904</li>
-          <li><strong>Type:</strong> CHECKING</li>
-          <li><strong>Beneficiary:</strong> Sehan Shahid</li>
-        </ul>
-        <p class="muted">Email your receipt to <a href="mailto:support@apkscannerpro.com">support@apkscannerpro.com</a>. We’ll credit your account.</p>
-      </details>
     </section>
 
     <section class="box">
@@ -240,7 +178,7 @@
         const j = await r.json();
         if(r.status===402 && j.payment_required){
           alert('Free limit reached. Continue for $0.50 or $1. Opening payment page.');
-          window.open('{{ pay_link }}','_blank');
+          window.open('#pay_link#','_blank');
         }else if(j.report){
           const rep = document.getElementById('report');
           rep.style.display = 'block';
@@ -256,7 +194,7 @@
       }
     });
 
-    // Manual unlock after payment (v1)
+    // Manual unlock after payment
     document.getElementById('ivePaidBtn').addEventListener('click', async ()=>{
       const plan = prompt("Type plan you paid: '50c' or '1usd'") || '';
       const txid = prompt('Optional: Enter your transaction ID / reference') || '';
