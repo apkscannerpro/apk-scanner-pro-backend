@@ -1,260 +1,281 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>APK Scanner Pro — Fast AI APK Malware Scanner</title>
-  <meta name="description" content="APK Scanner Pro - Scan APKs instantly for malware. 200 free daily scans, then $0.50–$1 per scan. Secure, fast, AI-powered." />
-  <meta name="keywords" content="APK scanner, apk malware scan, virus scan APK, android security, apk checker" />
-  <meta name="robots" content="index,follow" />
-  <link rel="canonical" href="https://apkscannerpro.com" />
-  <meta property="og:title" content="APK Scanner Pro — Fast AI APK Malware Scanner" />
-  <meta property="og:description" content="Scan APKs instantly for malware. 200 free daily scans, then $0.50–$1 per scan. Secure, fast, AI-powered." />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>APK Scanner Pro — Free AI APK Malware Scanner</title>
+  <meta name="description" content="Scan APKs for malware instantly with AI + multi-engine checks. 200 free scans/day per device. Fast, private, secure." />
+  <meta name="keywords" content="apk scanner, scan apk, apk malware, check apk virus, android security, apkscannerpro" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://www.apkscannerpro.com/"/>
+
+  <meta property="og:title" content="APK Scanner Pro — Free AI APK Malware Scanner" />
+  <meta property="og:description" content="Upload any APK, get an instant AI-powered malware verdict. 200 free scans/day." />
+  <meta property="og:url" content="https://www.apkscannerpro.com/" />
   <meta property="og:type" content="website" />
-  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon" />
+  <meta property="og:image" content="https://www.apkscannerpro.com/static/logo.png" />
+
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+
+  <link rel="icon" href="/static/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #0a0a0a; --fg: #ffffff; --muted:#b7c3cf;
+      --brand1:#00c6ff; --brand2:#0072ff; --cta:#ff4757;
+      --card:#111; --card2:#151515; --ok:#10d078; --warn:#ffcc00;
+    }
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;}
+    header{background:linear-gradient(90deg,var(--brand1),var(--brand2));padding:2.2rem 1rem;text-align:center}
+    .logo{margin:10px auto 8px}
+    .logo img{max-width:140px;height:auto}
+    .tagline{opacity:.95;margin:.2rem 0 .6rem;font-weight:600}
+    h1{margin:.2rem 0 0;font-size:2.2rem}
+    p.lead{margin:.3rem auto 0;max-width:820px}
+    .btn{background:var(--cta);color:#fff;border:none;padding:1rem 1.4rem;border-radius:10px;cursor:pointer;font-size:1.05rem}
+    .wrap{max-width:960px;margin:2rem auto;padding:0 1rem}
+    section{margin:2rem 0;background:var(--card);padding:1.5rem;border-radius:14px}
+    h2{color:var(--brand1);font-size:1.5rem;margin-top:0}
+    ul{padding-left:1.2rem}
+    li{margin:.4rem 0;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .report{white-space:pre-wrap;background:var(--card2);padding:1rem;border-radius:10px;margin-top:1rem}
+    .row{display:flex;gap:14px;flex-wrap:wrap}
+    .col{flex:1 1 280px}
+    footer{padding:2rem 1rem;text-align:center;color:#c9d3dd;background:#0c0c0c}
+    a{color:var(--brand1);text-decoration:underline}
+    .notice{background:#121212;border:1px solid #1f1f1f;padding:1rem;border-radius:10px}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    .pill{display:inline-block;background:#15202b;border:1px solid #1f2a35;color:#9fb3c8;padding:.28rem .6rem;border-radius:999px;font-size:.85rem}
+    .cta-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:1rem}
+    .cta-alt{background:transparent;border:1px solid #fff;color:#fff;padding:.8rem 1.1rem;border-radius:10px;cursor:pointer}
+    .badge{font-size:.85rem;color:#a6f4c5;margin-left:8px}
+    .kbd{border:1px solid #2a2a2a;border-bottom-width:2px;border-radius:6px;padding:.18rem .4rem;background:#161616}
+    .box{background:#0f0f0f;border:1px solid #1b1b1b;border-radius:12px;padding:1rem}
+    .ads{min-height:90px;background:#0b0b0b;border:1px dashed #1f1f1f;border-radius:10px;color:#5b7083;display:flex;align-items:center;justify-content:center}
+  </style>
+
+  <!-- JSON-LD: SoftwareApplication + FAQ for AEO/SEO -->
   <script type="application/ld+json">
   {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "APK Scanner Pro",
-    "description": "Scan APK files for malware instantly. 200 free daily scans, then paid scans.",
-    "url": "https://apkscannerpro.com"
+    "@context":"https://schema.org",
+    "@type":"SoftwareApplication",
+    "name":"APK Scanner Pro",
+    "applicationCategory":"SecurityApplication",
+    "operatingSystem":"Android",
+    "offers":{
+      "@type":"Offer",
+      "price":"0.00",
+      "priceCurrency":"USD"
+    },
+    "url":"https://www.apkscannerpro.com/",
+    "description":"AI-powered APK malware scanner. 200 free scans/day per device; paid unlocks for heavy users."
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"FAQPage",
+    "mainEntity":[
+      {"@type":"Question","name":"Is APK Scanner Pro free?","acceptedAnswer":{"@type":"Answer","text":"Yes. You get 200 free scans per day per device/IP. Need more? Unlock extra scans for $0.50 or $1."}},
+      {"@type":"Question","name":"Do you keep my files?","acceptedAnswer":{"@type":"Answer","text":"No. Files are processed securely and discarded after scanning."}},
+      {"@type":"Question","name":"Which engines do you use?","acceptedAnswer":{"@type":"Answer","text":"We use a mix of custom AI signals and multi-engine checks. We recommend installing a trusted AV like Bitdefender for device-level protection."}}
+    ]
   }
   </script>
 
-  <style>
-    :root{
-      --bg:#0b0f19; --card:#0f1720; --accent:#00c6ff; --accent2:#0072ff; --cta:#ff4b5c; --muted:#9aa7b2;
-      --container: 980px;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:#fff;line-height:1.4}
-    header{padding:36px 20px;text-align:center;background:linear-gradient(90deg,var(--accent),var(--accent2));}
-    .logo{max-width:140px;margin:0 auto 8px}
-    header h1{margin:6px 0 4px;font-size:1.6rem}
-    header p.tag{margin:0;color:#eaf6ff;opacity:.95;font-size:.95rem}
-    main{max-width:var(--container);margin:28px auto;padding:18px}
-    .card{background:linear-gradient(180deg,#071022 60%,#0f1724);padding:20px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.6);margin-bottom:18px}
-    .center{text-align:center}
-    h2{color:var(--accent);margin:0 0 12px;font-size:1.25rem}
-    p.lead{color:var(--muted);margin:0 0 12px}
-    .upload-area{border:2px dashed rgba(255,255,255,0.06);padding:18px;border-radius:10px}
-    input[type=file]{display:block;margin:12px auto}
-    button.btn{background:var(--cta);border:0;padding:10px 16px;border-radius:8px;color:#fff;font-weight:600;cursor:pointer}
-    button.btn:active{transform:translateY(1px)}
-    .small{font-size:0.9rem;color:var(--muted)}
-    pre.result{background:#07121a;padding:12px;border-radius:8px;color:#b8f3c8;overflow:auto;max-height:360px}
-    .payment-box{display:none;background:#1a0b08;border-radius:10px;padding:16px;border:1px solid rgba(255,255,255,0.04)}
-    ul.pay-list{list-style:none;padding:0;margin:8px 0}
-    ul.pay-list li{margin:6px 0;color:#fff;opacity:.95}
-    .copy-btn{background:#0b6e67;padding:8px 12px;border-radius:8px;border:0;color:#fff;cursor:pointer;margin-top:8px}
-    .upload-proof{margin-top:12px;border-radius:8px;padding:12px;background:#09121a}
-    label{display:block;margin:8px 0 6px;font-size:0.95rem;color:var(--muted)}
-    input[type="email"], input[type="text"], input[type="number"] {width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);color:#fff}
-    .muted {color:var(--muted);font-size:0.9rem}
-    footer{max-width:var(--container);margin:28px auto 60px;text-align:center;color:var(--muted);font-size:0.9rem}
-    @media (max-width:600px){header h1{font-size:1.3rem}}
-  </style>
+  {% if adsense_id %}
+  <!-- AdSense (will only load if ADSENSE_ID is set) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ adsense_id }}" crossorigin="anonymous"></script>
+  {% endif %}
 </head>
 <body>
   <header>
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="APK Scanner Pro" class="logo" />
+    <div class="logo">
+      <img src="/static/logo.png" alt="APK Scanner Pro Logo" />
+    </div>
+    <div class="tagline">Scan smart. Stay safe. Sleep rich.</div>
     <h1>APK Scanner Pro</h1>
-    <p class="tag">AI-Powered APK Malware Detection — Instant. Accurate. Secure.</p>
+    <p class="lead">AI-powered APK malware scanner. Upload any APK and get an instant verdict. <span class="pill">200 free scans/day</span></p>
+    <div class="cta-row">
+      <button class="btn" onclick="document.getElementById('scan').scrollIntoView({behavior:'smooth'})">Scan APK Now</button>
+      <a class="cta-alt" href="{{ pay_link }}" target="_blank" rel="noopener">Continue Scanning ($0.50 / $1)</a>
+    </div>
   </header>
 
-  <main>
-    <!-- Scan card -->
-    <section class="card upload-card">
-      <div class="center">
-        <h2>📲 Scan your APK</h2>
-        <p class="lead">Upload an APK file and get a full AI + engine malware analysis instantly. 200 free scans per day — then pay per scan.</p>
-      </div>
+  <main class="wrap">
 
-      <div class="upload-area center" id="upload-area">
-        <input id="apkInput" type="file" accept=".apk" />
-        <div class="small">Supported: .apk (Android package)</div>
-        <div style="height:12px"></div>
-        <button class="btn" id="scanBtn">🔍 Upload & Scan</button>
-        <div style="height:10px"></div>
-        <div id="quotaText" class="muted center">Checking quota…</div>
-      </div>
-
-      <div style="height:12px"></div>
-      <div id="resultContainer" style="display:none">
-        <h2>Result</h2>
-        <pre id="resultPre" class="result"></pre>
+    <section id="about">
+      <h2>What it does</h2>
+      <div class="row">
+        <div class="col box">
+          <strong>Instant APK scanning</strong>
+          <p class="muted">Detects malware, spyware, adware, trackers, permission abuse and risky SDKs before you install.</p>
+        </div>
+        <div class="col box">
+          <strong>No signup. Private.</strong>
+          <p class="muted">Just upload and go. Files are processed transiently and not retained after scan.</p>
+        </div>
+        <div class="col box">
+          <strong>Built for power users</strong>
+          <p class="muted">Gamers, testers, researchers, reverse engineers. Heavy users can unlock extra scans in seconds.</p>
+        </div>
       </div>
     </section>
 
-    <!-- Payment / upgrade card -->
-    <section class="card payment-card" id="paymentCard" style="display:none">
-      <h2>💳 Upgrade — Unlimited scans today</h2>
-      <p class="lead">200 free daily scans. After that you can pay per scan: <strong>$0.50</strong> (recommended) — up to <strong>$1</strong> per scan depending on method.</p>
+    <section id="scan">
+      <h2>Scan your APK</h2>
+      <div class="notice">
+        <div><span class="mono">Free quota today:</span> <span id="quota" class="badge">…</span></div>
+        <div class="muted" style="margin-top:.4rem">Hit the limit? Continue for <strong>$0.50</strong> ({{% raw %}}{{{{ %}}% endraw %}}~{{% raw %}}%{{% endraw %}} {{% raw %}}{{{{ %}}% endraw %}} scans) or <strong>$1</strong> ({{% raw %}}{{{{ %}}% endraw %}}~{{% raw %}}%{{% endraw %}} {{% raw %}}{{{{ %}}% endraw %}} scans). You’ll be auto-unlocked immediately after payment confirmation.</div>
+      </div>
 
-      <div class="payment-box" id="paymentBox">
-        <p class="small">Send payment (local bank / wire) to the following account. Then upload your payment proof below to get unlimited scans for the rest of the day.</p>
+      <form id="scanForm" style="margin-top:1rem">
+        <input type="file" name="apk" id="apkInput" accept=".apk" required />
+        <button type="submit" class="btn" style="margin-left:10px">🔍 Upload & Scan</button>
+      </form>
 
-        <ul class="pay-list" id="payDetails">
-          <li><strong>Bank name:</strong> Citibank</li>
-          <li><strong>Transfer type:</strong> Local transfer</li>
-          <li><strong>Bank address:</strong> 111 Wall Street New York, NY 10043 USA</li>
+      <div id="report" class="report" style="display:none;margin-top:1rem"></div>
+
+      <div class="cta-row" style="margin-top:1rem">
+        <a class="cta-alt" href="{{ pay_link }}" target="_blank" rel="noopener">Continue for $0.50 / $1</a>
+        <button class="cta-alt" id="ivePaidBtn" title="If you’ve paid, click to unlock now">I’ve paid — unlock scans</button>
+      </div>
+    </section>
+
+    <section id="protection">
+      <h2>Recommended Protection</h2>
+      <p class="muted">Scanner = great before install. For 24/7 device protection, install a trusted AV.</p>
+      <p><a href="{{ bitdefender_aff }}" target="_blank" rel="nofollow noopener">Bitdefender (Affiliate)</a> — industry-leading malware detection with minimal performance hit.</p>
+    </section>
+
+    {% if adsense_id %}
+    <section>
+      <h2>Sponsored</h2>
+      <!-- Example ad slot -->
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="{{ adsense_id }}"
+           data-ad-slot="0000000000"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+    </section>
+    {% else %}
+    <section>
+      <h2>Sponsored</h2>
+      <div class="ads">Ad space (automatically activates when AdSense ID is configured)</div>
+    </section>
+    {% endif %}
+
+    <section id="payments" class="box">
+      <h2>Payments & Pricing</h2>
+      <p><strong>Free:</strong> 200 scans/day per device/IP.</p>
+      <p><strong>Heavy use:</strong> $0.50 → ~{{% raw %}}{{{{ %}}% endraw %}} scans • $1 → ~{{% raw %}}{{{{ %}}% endraw %}} scans.</p>
+      <p>
+        <a class="btn" href="{{ pay_link }}" target="_blank" rel="noopener">Pay Now (Open Checkout)</a>
+        <span class="muted" style="margin-left:.6rem">After paying, click <span class="kbd">I’ve paid — unlock scans</span> to continue instantly.</span>
+      </p>
+
+      <details style="margin-top:1rem">
+        <summary>Pay by Bank Transfer (Manual)</summary>
+        <ul>
+          <li><strong>Bank:</strong> Citibank</li>
+          <li><strong>Address:</strong> 111 Wall Street New York, NY 10043 USA</li>
           <li><strong>Routing (ABA):</strong> 031100209</li>
-          <li><strong>SWIFT code:</strong> CITIUS33</li>
-          <li><strong>Account number:</strong> 70588660001898904</li>
-          <li><strong>Account type:</strong> CHECKING</li>
+          <li><strong>SWIFT:</strong> CITIUS33</li>
+          <li><strong>Account #:</strong> 70588660001898904</li>
+          <li><strong>Type:</strong> CHECKING</li>
           <li><strong>Beneficiary:</strong> Sehan Shahid</li>
         </ul>
-
-        <div style="margin-top:8px">
-          <label for="scansWanted">How many paid scans do you want? (0.50 USD per scan)</label>
-          <input id="scansWanted" type="number" min="1" step="1" value="1" />
-          <div style="height:8px"></div>
-          <label for="calculatedAmount" class="small">Amount to pay (USD)</label>
-          <input id="calculatedAmount" type="text" value="0.50" readonly />
-          <button class="copy-btn" id="copyDetailsBtn">📋 Copy payment details</button>
-        </div>
-
-        <div class="upload-proof">
-          <h3 style="margin:8px 0 6px">Upload payment proof (image) — receive unlimited scans</h3>
-          <form id="proofForm" enctype="multipart/form-data">
-            <label for="payerEmail">Your email (so we can confirm)</label>
-            <input id="payerEmail" name="email" type="email" placeholder="you@example.com" required />
-
-            <label for="amountPaid">Amount paid (USD)</label>
-            <input id="amountPaid" name="amount" type="text" required />
-
-            <label for="proofFile">Proof image (screenshot / receipt)</label>
-            <input id="proofFile" name="proof" type="file" accept="image/*" required />
-
-            <div style="height:10px"></div>
-            <button class="btn" type="submit">Upload Proof & Activate</button>
-            <div id="proofMsg" class="muted" style="margin-top:10px"></div>
-          </form>
-        </div>
-      </div>
+        <p class="muted">Email your receipt to <a href="mailto:support@apkscannerpro.com">support@apkscannerpro.com</a>. We’ll credit your account.</p>
+      </details>
     </section>
 
-    <section class="card small center">
-      <div class="muted">Have questions? Email: <a href="mailto:support@apkscannerpro.com" style="color:#9be6ff">support@apkscannerpro.com</a></div>
+    <section class="box">
+      <h2>Follow & Updates</h2>
+      <p>
+        <a href="https://www.instagram.com/apkscannerpro/" target="_blank" rel="noopener">Instagram</a> •
+        <a href="https://www.tiktok.com/@apkscanner" target="_blank" rel="noopener">TikTok</a>
+      </p>
+    </section>
+
+    <section class="box">
+      <h2>Ownership</h2>
+      <p class="muted">This website (<a href="https://www.apkscannerpro.com/" target="_blank" rel="noopener">www.apkscannerpro.com</a>) is owned and operated by <strong>Sehan Shahid</strong>. Contact: <a href="mailto:support@apkscannerpro.com">support@apkscannerpro.com</a></p>
     </section>
   </main>
 
   <footer>
-    &copy; 2025 APK Scanner Pro • Scan smart. Stay safe.
+    &copy; 2025 APK Scanner Pro — Scan smart. Stay safe.<br/>
+    <a href="/robots.txt">Robots</a> • <a href="/sitemap.xml">Sitemap</a>
   </footer>
 
   <script>
-    // Helpers
-    const scanBtn = document.getElementById('scanBtn');
-    const apkInput = document.getElementById('apkInput');
-    const resultContainer = document.getElementById('resultContainer');
-    const resultPre = document.getElementById('resultPre');
-    const quotaText = document.getElementById('quotaText');
-    const paymentCard = document.getElementById('paymentCard');
-    const paymentBox = document.getElementById('paymentBox');
-    const scansWanted = document.getElementById('scansWanted');
-    const calculatedAmount = document.getElementById('calculatedAmount');
-    const copyDetailsBtn = document.getElementById('copyDetailsBtn');
-    const proofForm = document.getElementById('proofForm');
-    const proofMsg = document.getElementById('proofMsg');
-
-    const perScanPrice = 0.50; // USD per scan default
-
-    // update calculated amount
-    function updateAmount() {
-      const n = parseInt(scansWanted.value) || 1;
-      calculatedAmount.value = (n * perScanPrice).toFixed(2);
-      document.getElementById('amountPaid').value = calculatedAmount.value;
-    }
-    scansWanted.addEventListener('input', updateAmount);
-    updateAmount();
-
-    // copy payment details
-    copyDetailsBtn.addEventListener('click', () => {
-      const d = document.getElementById('payDetails').innerText;
-      const amount = calculatedAmount.value;
-      const text = `${d}\n\nAmount (USD): ${amount}\nReference: APKScan-${Date.now()}`;
-      navigator.clipboard.writeText(text).then(() => {
-        alert('Payment details + amount copied to clipboard.');
-      });
-    });
-
-    // fetch quota at load
-    async function fetchQuota() {
-      try {
-        const resp = await fetch('/scan-stats');
-        const j = await resp.json();
-        quotaText.textContent = `Free scans remaining today: ${j.free_scans_remaining}`;
-        if (j.free_scans_remaining <= 0) {
-          // show payment card
-          paymentCard.style.display = 'block';
-          paymentBox.style.display = 'block';
-        } else {
-          paymentCard.style.display = 'none';
-        }
-      } catch (e) {
-        quotaText.textContent = "Couldn't load quota. Try again.";
-      }
-    }
-    fetchQuota();
-
-    // scan action
-    scanBtn.addEventListener('click', async () => {
-      if (!apkInput.files.length) { alert('Please select an APK file.'); return; }
-      scanBtn.disabled = true;
-      scanBtn.textContent = '⏳ Scanning...';
-      resultPre.textContent = '';
-      resultContainer.style.display = 'none';
-
-      try {
-        const f = new FormData();
-        f.append('apk', apkInput.files[0]);
-        const r = await fetch('/scan', { method: 'POST', body: f });
+    async function refreshQuota(){
+      try{
+        const r = await fetch('/scan-stats');
         const j = await r.json();
-
-        if (r.status === 403 && j.payment_required) {
-          // show payment UI and display message
-          paymentCard.style.display = 'block';
-          paymentBox.style.display = 'block';
-          resultContainer.style.display = 'block';
-          resultPre.textContent = j.error + '\n\nPlease pay and upload proof to continue.';
-        } else if (j.report) {
-          resultContainer.style.display = 'block';
-          resultPre.textContent = JSON.stringify(j.report, null, 2);
-        } else {
-          resultContainer.style.display = 'block';
-          resultPre.textContent = JSON.stringify(j, null, 2);
-        }
-      } catch (err) {
-        resultContainer.style.display = 'block';
-        resultPre.textContent = 'Network error — try again later.';
-      } finally {
-        scanBtn.disabled = false;
-        scanBtn.textContent = '🔍 Upload & Scan';
-        fetchQuota(); // refresh quota after attempt
+        const free = Math.max(0, j.free_remaining || 0);
+        const paid = j.paid_balance || 0;
+        document.getElementById('quota').textContent = `${free} free left • ${paid} paid scans`;
+      }catch(e){
+        document.getElementById('quota').textContent = 'Quota unavailable';
       }
-    });
+    }
+    refreshQuota();
 
-    // upload payment proof
-    proofForm.addEventListener('submit', async (e) => {
+    document.getElementById('scanForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      proofMsg.textContent = 'Uploading proof...';
-      const form = new FormData(proofForm);
-      try {
-        const r = await fetch('/upload-proof', { method: 'POST', body: form });
+      const file = document.getElementById('apkInput').files[0];
+      if(!file){ alert('Select an .apk file'); return; }
+      const btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = 'Scanning…';
+
+      const fd = new FormData(); fd.append('apk', file);
+      try{
+        const r = await fetch('/scan',{method:'POST',body:fd});
         const j = await r.json();
-        if (r.ok) {
-          proofMsg.textContent = j.message || 'Proof uploaded — unlimited scans activated for today.';
-          // refresh quota to reflect reset
-          await fetchQuota();
-          // clear inputs
-          proofForm.reset();
-        } else {
-          proofMsg.textContent = j.error || 'Upload failed — try again.';
+        if(r.status===402 && j.payment_required){
+          alert('Free limit reached. Continue for $0.50 or $1. Opening payment page.');
+          window.open('{{ pay_link }}','_blank');
+        }else if(j.report){
+          const rep = document.getElementById('report');
+          rep.style.display = 'block';
+          rep.textContent = j.report;
+        }else{
+          alert(j.error || 'Something went wrong.');
         }
-      } catch (err) {
-        proofMsg.textContent = 'Network/upload error — try again.';
+      }catch(err){
+        alert('Upload failed.');
+      }finally{
+        btn.disabled = false; btn.textContent = '🔍 Upload & Scan';
+        refreshQuota();
+      }
+    });
+
+    // Manual unlock after payment (v1)
+    document.getElementById('ivePaidBtn').addEventListener('click', async ()=>{
+      const plan = prompt("Type plan you paid: '50c' or '1usd'") || '';
+      const txid = prompt('Optional: Enter your transaction ID / reference') || '';
+      if(!plan) return;
+      try{
+        const r = await fetch('/payment/notify', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({plan, txid, source:'manual'})
+        });
+        const j = await r.json();
+        if(j.ok){
+          alert('Payment confirmed. Extra scans unlocked. You can continue scanning now.');
+          refreshQuota();
+        }else{
+          alert(j.error || 'Unable to unlock. Try again or email support.');
+        }
+      }catch(e){
+        alert('Network error.');
       }
     });
   </script>
