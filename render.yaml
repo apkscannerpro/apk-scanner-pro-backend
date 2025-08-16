@@ -4,5 +4,6 @@ services:
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn apk_scanner_pro.api_server:app --bind 0.0.0.0:$PORT --workers 2
-
-
+    envVars:
+      - key: VT_API_KEY
+        sync: false   # store your VirusTotal API key in Render Dashboard
