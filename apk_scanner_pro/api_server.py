@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_file, render_template
 import os
-from scan_worker import scan_apk
-from report_generator import generate_report
+from .scan_worker import scan_apk
+from .report_generator import generate_report
 from datetime import datetime
 import json
 import logging
@@ -51,7 +51,6 @@ def reset_daily_scan_count():
 @app.route("/", methods=["GET"])
 @app.route("/home", methods=["GET"])
 def home():
-    # templates/index.html
     return render_template("index.html")
 
 @app.route("/scan-stats", methods=["GET"])
@@ -69,7 +68,6 @@ def scan():
     data = reset_daily_scan_count()
 
     if data["scan_count"] >= MAX_FREE_SCANS_PER_DAY:
-        # Frontend will show payment modal/options
         return jsonify({
             "error": "Daily free scan limit reached.",
             "payment_required": True
