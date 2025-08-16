@@ -111,9 +111,9 @@ def robots():
 def sitemap():
     return send_file(os.path.join(app.static_folder, "sitemap.xml"), mimetype="application/xml")
 
-@app.route("/ping", methods=["GET"])
+@app.route("/ping")
 def ping():
-    return "pong"
+    return {"status": "ok"}
 
 # error handlers for cleaner 500s
 @app.errorhandler(500)
@@ -122,6 +122,5 @@ def handle_500(e):
     return jsonify({"error": "Internal Server Error"}), 500
 
 if __name__ == "__main__":
-    # Local dev: python apk_scanner_pro/api_server.py
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
