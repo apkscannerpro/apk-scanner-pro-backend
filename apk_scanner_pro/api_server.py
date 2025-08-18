@@ -63,6 +63,18 @@ def home():
     return render_template("index.html")
 
 
+@app.route("/privacy", methods=["GET"])
+def privacy():
+    """Serve privacy policy page"""
+    return render_template("privacy.html")
+
+
+@app.route("/terms", methods=["GET"])
+def terms():
+    """Serve terms of service page"""
+    return render_template("terms.html")
+
+
 @app.route("/scan-stats", methods=["GET"])
 def scan_stats():
     """Return remaining free scans for today"""
