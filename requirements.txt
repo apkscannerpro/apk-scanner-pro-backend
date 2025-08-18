@@ -6,4 +6,3 @@ gunicorn==21.2.0
 email-validator==2.1.0.post1
 reportlab==4.0.9
 python-dotenv==1.0.1
-smtplib-client==0.1.0   # for email sending support
