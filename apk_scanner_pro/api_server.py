@@ -21,7 +21,6 @@ MAX_FREE_SCANS_PER_DAY = 200  # daily free scan limit
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("apk_scanner_pro")
 
-
 # --- Helpers ---
 def load_scan_data():
     """Load daily scan stats from /tmp/scan_data.json"""
@@ -53,6 +52,13 @@ def reset_daily_scan_count():
         data["last_reset"] = today
         save_scan_data(data)
     return data
+
+
+# --- Context Processor to inject current_year ---
+@app.context_processor
+def inject_current_year():
+    """Automatically add current_year to all templates"""
+    return {"current_year": datetime.utcnow().year}
 
 
 # --- Routes ---
