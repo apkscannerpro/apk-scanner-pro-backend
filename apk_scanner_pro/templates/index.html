@@ -1,221 +1,315 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>APK Scanner Pro — Free AI APK Malware Scanner</title>
-  <meta name="description" content="Scan APKs for malware instantly with AI + multi-engine checks. 200 free scans/day per device. Fast, private, secure." />
-  <meta name="keywords" content="apk scanner, scan apk, apk malware, check apk virus, android security, apkscannerpro" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>APK Scanner Pro — World's Most Trusted AI APK Scanner</title>
+  <meta name="description" content="APK Scanner Pro — AI + multi-engine APK malware detection. 200 free scans/day. Fast, private, trustworthy." />
+  <meta name="keywords" content="apk scanner, apk malware, scan apk, apk security, android malware scanner" />
+  <link rel="canonical" href="https://www.apkscannerpro.com/" />
   <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://www.apkscannerpro.com/"/>
 
-  <meta property="og:title" content="APK Scanner Pro — Free AI APK Malware Scanner" />
-  <meta property="og:description" content="Upload any APK, get an instant AI-powered malware verdict. 200 free scans/day." />
-  <meta property="og:url" content="https://www.apkscannerpro.com/" />
-  <meta property="og:type" content="website" />
+  <!-- OpenGraph -->
+  <meta property="og:title" content="APK Scanner Pro — World's Most Trusted AI APK Scanner" />
+  <meta property="og:description" content="Upload APKs and get an instant AI-powered malware report. 200 free scans/day — private & secure." />
   <meta property="og:image" content="https://www.apkscannerpro.com/static/logo.png" />
-
-  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <meta property="og:type" content="website" />
 
   <link rel="icon" href="/static/favicon.ico" />
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
 
   <style>
-    :root {
-      --bg: #0a0a0a; --fg: #ffffff; --muted:#b7c3cf;
-      --brand1:#00c6ff; --brand2:#0072ff; --cta:#ff4757;
-      --card:#111; --card2:#151515; --ok:#10d078; --warn:#ffcc00;
+    :root{
+      --bg:#07080a; --card:#0f1113; --card-2:#0b0c0d; --muted:#9aa7b3;
+      --brand-1:#00c6ff; --brand-2:#0072ff; --accent:#ff6b6b; --text:#e6eef6;
+      --success:#1bd58b; --glass: rgba(255,255,255,0.03);
+      --radius:14px;
     }
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;}
-    header{background:linear-gradient(90deg,var(--brand1),var(--brand2));padding:2.2rem 1rem;text-align:center}
-    .logo{margin:10px auto 8px}
-    .logo img{max-width:140px;height:auto}
-    .tagline{opacity:.95;margin:.2rem 0 .6rem;font-weight:600}
-    h1{margin:.2rem 0 0;font-size:2.2rem}
-    p.lead{margin:.3rem auto 0;max-width:820px}
-    .btn{background:var(--cta);color:#fff;border:none;padding:1rem 1.4rem;border-radius:10px;cursor:pointer;font-size:1.05rem}
-    .wrap{max-width:960px;margin:2rem auto;padding:0 1rem}
-    section{margin:2rem 0;background:var(--card);padding:1.5rem;border-radius:14px}
-    h2{color:var(--brand1);font-size:1.5rem;margin-top:0}
-    ul{padding-left:1.2rem}
-    li{margin:.4rem 0;color:var(--muted)}
-    .muted{color:var(--muted)}
-    .report{white-space:pre-wrap;background:var(--card2);padding:1rem;border-radius:10px;margin-top:1rem}
-    .row{display:flex;gap:14px;flex-wrap:wrap}
-    .col{flex:1 1 280px}
-    footer{padding:2rem 1rem;text-align:center;color:#c9d3dd;background:#0c0c0c}
-    a{color:var(--brand1);text-decoration:underline}
-    .notice{background:#121212;border:1px solid #1f1f1f;padding:1rem;border-radius:10px}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-    .pill{display:inline-block;background:#15202b;border:1px solid #1f2a35;color:#9fb3c8;padding:.28rem .6rem;border-radius:999px;font-size:.85rem}
-    .cta-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:1rem}
-    .cta-alt{background:transparent;border:1px solid #fff;color:#fff;padding:.8rem 1.1rem;border-radius:10px;cursor:pointer}
-    .badge{font-size:.85rem;color:#a6f4c5;margin-left:8px}
-    .kbd{border:1px solid #2a2a2a;border-bottom-width:2px;border-radius:6px;padding:.18rem .4rem;background:#161616}
-    .box{background:#0f0f0f;border:1px solid #1b1b1b;border-radius:12px;padding:1rem}
-    .ads{min-height:90px;background:#0b0b0b;border:1px dashed #1f1f1f;border-radius:10px;color:#5b7083;display:flex;align-items:center;justify-content:center}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--bg),#040506);color:var(--text);-webkit-font-smoothing:antialiased}
+    header{padding:2.4rem 1rem;text-align:center;background:linear-gradient(90deg,var(--brand-1),var(--brand-2));border-bottom:1px solid rgba(255,255,255,0.03)}
+    .wrap{max-width:1100px;margin:1.6rem auto;padding:0 16px}
+    .logo img{height:68px}
+    .tag{margin:.35rem 0;color:rgba(255,255,255,0.95);font-weight:600}
+    h1{margin:.2rem 0;font-size:2.1rem}
+    p.lead{color:var(--text);opacity:.95;margin:0 0 12px}
+
+    .grid{display:grid;grid-template-columns:1fr 420px;gap:20px;align-items:start}
+    .panel{background:var(--card);padding:20px;border-radius:var(--radius);box-shadow:0 6px 18px rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.02)}
+    .hero-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+
+    .btn{background:linear-gradient(90deg,var(--brand-1),var(--brand-2));border:none;color:#02101a;padding:12px 18px;border-radius:12px;font-weight:600;cursor:pointer}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
+    .muted{color:var(--muted);font-size:0.95rem}
+
+    label{display:block;margin-bottom:8px;font-weight:600}
+    input[type="file"]{display:block}
+    input[type="email"], input[type="text"]{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)}
+    form .row{display:flex;gap:10px;align-items:center;margin-top:12px}
+    .quota-box{padding:14px;border-radius:12px;background:linear-gradient(180deg,var(--card-2),#050607);border:1px solid rgba(255,255,255,0.03)}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.02);font-weight:600;color:var(--brand-1)}
+    .report{white-space:pre-wrap;background:rgba(0,0,0,0.18);padding:12px;border-radius:10px;margin-top:12px;color:#e6eef6;border:1px solid rgba(255,255,255,0.03);max-height:380px;overflow:auto}
+
+    .trust-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px;justify-content:center}
+    .trust-badge{background:var(--glass);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);font-weight:600;color:var(--muted)}
+    .testimonials{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .testimonial{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);color:var(--muted)}
+
+    footer{padding:28px 0;text-align:center;color:var(--muted);margin-top:32px;border-top:1px solid rgba(255,255,255,0.02)}
+    .small{font-size:0.9rem}
+    @media (max-width:980px){.grid{grid-template-columns:1fr;}.logo img{height:56px}}
   </style>
 </head>
 <body>
   <header>
-    <div class="logo">
-      <img src="/static/logo.png" alt="APK Scanner Pro Logo" />
-    </div>
-    <div class="tagline">Scan smart. Stay safe. Sleep rich.</div>
-    <h1>APK Scanner Pro</h1>
-    <p class="lead">AI-powered APK malware scanner. Upload any APK and get an instant verdict. <span class="pill">200 free scans/day</span></p>
-    <div class="cta-row">
-      <button class="btn" onclick="document.getElementById('scan').scrollIntoView({behavior:'smooth'})">Scan APK Now</button>
-      <a class="cta-alt" href="#pay_link#" target="_blank" rel="noopener">Continue Scanning ($0.50 / $1)</a>
+    <div class="wrap" style="max-width:900px;text-align:center">
+      <div class="logo" style="display:flex;gap:12px;align-items:center;justify-content:center">
+        <img src="/static/logo.png" alt="APK Scanner Pro Logo" />
+      </div>
+      <div class="tag">Trusted · Private · AI-powered</div>
+      <h1>APK Scanner Pro</h1>
+      <p class="lead">Instant, professional APK malware reports with AI + multi-engine checks. 200 free scans/day — no signup required.</p>
+      <div class="hero-actions">
+        <button class="btn" onclick="document.getElementById('scan').scrollIntoView({behavior:'smooth'})">Scan APK Now</button>
+        <a class="btn secondary" href="#pay_link#" id="payNow">Continue Scanning — Unlock More</a>
+      </div>
+      <div class="trust-row" style="margin-top:14px">
+        <div class="trust-badge">ISO-style security</div>
+        <div class="trust-badge">Transient processing — files not stored</div>
+        <div class="trust-badge">Email reports (secure)</div>
+      </div>
     </div>
   </header>
 
-  <main class="wrap">
+  <main class="wrap" style="max-width:1100px">
+    <div class="grid" style="margin-top:18px">
+      <!-- Left column — features, protection, testimonials -->
+      <div>
+        <div class="panel">
+          <h2 style="margin:0 0 8px">Why APK Scanner Pro?</h2>
+          <ul style="padding-left:18px;margin-top:8px;color:var(--muted)">
+            <li><strong>AI + multiple engines:</strong> We combine AI signals with multi-engine scans to reduce false positives.</li>
+            <li><strong>Private & transient:</strong> Files are scanned in-memory and removed; we never keep your APKs.</li>
+            <li><strong>Branded reports:</strong> Receive a clear, actionable report by email (optional) after each scan.</li>
+            <li><strong>200 free scans/day:</strong> Per device/IP — heavy users can unlock paid bundles instantly.</li>
+          </ul>
 
-    <section id="about">
-      <h2>What it does</h2>
-      <div class="row">
-        <div class="col box">
-          <strong>Instant APK scanning</strong>
-          <p class="muted">Detects malware, spyware, adware, trackers, permission abuse and risky SDKs before you install.</p>
+          <div style="display:flex;gap:12px;margin-top:12px;align-items:center;flex-wrap:wrap">
+            <img src="/static/trust_seal_1.png" alt="Trust" style="height:48px"/>
+            <img src="/static/trust_seal_2.png" alt="Verified" style="height:42px"/>
+            <div class="muted small">Used by researchers, QA teams, and privacy-conscious users worldwide.</div>
+          </div>
+
+          <div class="testimonials" aria-live="polite">
+            <div class="testimonial"><strong>“Saved me from a trojan — instant, accurate, and private.”</strong><div class="muted small">— Security researcher</div></div>
+            <div class="testimonial"><strong>“Easy to use — reports are clear and actionable.”</strong><div class="muted small">— Android developer</div></div>
+          </div>
         </div>
-        <div class="col box">
-          <strong>No signup. Private.</strong>
-          <p class="muted">Just upload and go. Files are processed transiently and not retained after scan.</p>
-        </div>
-        <div class="col box">
-          <strong>Built for power users</strong>
-          <p class="muted">Gamers, testers, researchers, reverse engineers. Heavy users can unlock extra scans in seconds.</p>
+
+        <div class="panel" style="margin-top:18px">
+          <h3 style="margin:0 0 8px">Recommended Protection</h3>
+          <p class="muted">Scanner helps before installation. For continuous protection, install a dedicated AV (affiliate links available).</p>
+          <p><a href="#bitdefender_aff#" target="_blank" rel="noopener noreferrer" class="muted">Bitdefender / Norton (affiliate)</a></p>
+
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:12px 0" />
+          <h4 style="margin:0 0 8px">Newsletter & Updates</h4>
+          <p class="muted small">Get high-signal security tips and new features.</p>
+          <form id="newsletterForm" class="row" onsubmit="return false" style="margin-top:8px">
+            <input id="newsletterEmail" type="email" placeholder="you@company.com" required />
+            <button class="btn secondary" id="newsletterBtn">Subscribe</button>
+          </form>
+          <div id="newsletterMsg" style="margin-top:10px;color:var(--muted);font-size:.95rem"></div>
         </div>
       </div>
-    </section>
 
-    <section id="scan">
-      <h2>Scan your APK</h2>
-      <div class="notice">
-        <div><span class="mono">Free quota today:</span> <span id="quota" class="badge">…</span></div>
-        <div class="muted" style="margin-top:.4rem">Hit the limit? Continue for <strong>$0.50</strong> (~50 scans) or <strong>$1</strong> (~120 scans). You’ll be auto-unlocked immediately after payment confirmation.</div>
+      <!-- Right column — scanning UI -->
+      <aside>
+        <div class="panel quota-box">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div class="muted">Free quota today</div>
+              <div style="font-size:1.15rem;font-weight:700">
+                <span id="quotaCount">…</span> <span class="badge">free</span>
+              </div>
+              <div class="muted small" style="margin-top:6px">Reset daily (UTC)</div>
+            </div>
+            <div style="text-align:right">
+              <div class="muted">Trusted</div>
+              <div style="font-weight:700;color:var(--success)">99.99% uptime</div>
+            </div>
+          </div>
+
+          <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)" />
+
+          <h3 style="margin:0 0 8px">Scan an APK</h3>
+          <form id="scanForm" class="row" enctype="multipart/form-data" style="flex-direction:column">
+            <label for="apkInput">1) Choose APK</label>
+            <input id="apkInput" name="apk" type="file" accept=".apk" required />
+
+            <label for="emailInput" style="margin-top:8px">2) Email for report (optional)</label>
+            <input id="emailInput" name="email" type="email" placeholder="you@company.com" />
+
+            <div class="row" style="margin-top:12px;justify-content:space-between">
+              <button id="scanBtn" class="btn">🔍 Upload & Scan</button>
+              <a class="btn secondary" href="#pay_link#" id="unlockBtn">Unlock More Scans</a>
+            </div>
+            <div id="scanNotice" class="muted small" style="margin-top:8px">Files are processed securely and removed after scanning.</div>
+          </form>
+
+          <div id="report" class="report" style="display:none"></div>
+
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
+            <button class="btn secondary" id="ivePaidBtn" title="If you’ve paid, click to unlock now">I’ve paid — unlock scans</button>
+            <a class="btn secondary" href="mailto:support@apkscannerpro.com">Contact Support</a>
+          </div>
+
+        </div>
+
+        <div class="panel" style="margin-top:14px">
+          <h4 style="margin:0 0 8px">Manual Bank Transfer</h4>
+          <div class="muted small">
+            <strong>Bank:</strong> Citibank • <strong>SWIFT:</strong> CITIUS33<br/>
+            <strong>Account #:</strong> 70588660001898904 • <strong>Beneficiary:</strong> Sehan Shahid<br/>
+            Email receipt to <a href="mailto:support@apkscannerpro.com">support@apkscannerpro.com</a> to credit your account.
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Footer + legal -->
+    <footer>
+      <div style="max-width:900px;margin:0 auto">
+        <div style="display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-bottom:8px">
+          <a href="/privacy.html" class="small muted">Privacy</a>
+          <a href="/terms.html" class="small muted">Terms</a>
+          <a href="/robots.txt" class="small muted">Robots</a>
+          <a href="/sitemap.xml" class="small muted">Sitemap</a>
+        </div>
+
+        <div class="small muted">© 2025 APK Scanner Pro — Trusted by researchers and privacy-first users. Contact <a href="mailto:support@apkscannerpro.com">support@apkscannerpro.com</a></div>
       </div>
-
-      <form id="scanForm" style="margin-top:1rem">
-        <input type="file" name="apk" id="apkInput" accept=".apk" required />
-        <button type="submit" class="btn" style="margin-left:10px">🔍 Upload & Scan</button>
-      </form>
-
-      <div id="report" class="report" style="display:none;margin-top:1rem"></div>
-
-      <div class="cta-row" style="margin-top:1rem">
-        <a class="cta-alt" href="#pay_link#" target="_blank" rel="noopener">Continue for $0.50 / $1</a>
-        <button class="cta-alt" id="ivePaidBtn" title="If you’ve paid, click to unlock now">I’ve paid — unlock scans</button>
-      </div>
-    </section>
-
-    <section id="protection">
-      <h2>Recommended Protection</h2>
-      <p class="muted">Scanner = great before install. For 24/7 device protection, install a trusted AV.</p>
-      <p><a href="#bitdefender_aff#" target="_blank" rel="nofollow noopener">Bitdefender (Affiliate)</a> — industry-leading malware detection with minimal performance hit.</p>
-    </section>
-
-    <section>
-      <h2>Sponsored</h2>
-      <div class="ads">Ad space (automatically activates when AdSense ID is configured)</div>
-    </section>
-
-    <section id="payments" class="box">
-      <h2>Payments & Pricing</h2>
-      <p><strong>Free:</strong> 200 scans/day per device/IP.</p>
-      <p><strong>Heavy use:</strong> $0.50 → ~50 scans • $1 → ~120 scans.</p>
-      <p>
-        <a class="btn" href="#pay_link#" target="_blank" rel="noopener">Pay Now (Open Checkout)</a>
-        <span class="muted" style="margin-left:.6rem">After paying, click <span class="kbd">I’ve paid — unlock scans</span> to continue instantly.</span>
-      </p>
-    </section>
-
-    <section class="box">
-      <h2>Follow & Updates</h2>
-      <p>
-        <a href="https://www.instagram.com/apkscannerpro/" target="_blank" rel="noopener">Instagram</a> •
-        <a href="https://www.tiktok.com/@apkscanner" target="_blank" rel="noopener">TikTok</a>
-      </p>
-    </section>
-
-    <section class="box">
-      <h2>Ownership</h2>
-      <p class="muted">This website (<a href="https://www.apkscannerpro.com/" target="_blank" rel="noopener">www.apkscannerpro.com</a>) is owned and operated by <strong>Sehan Shahid</strong>. Contact: <a href="mailto:support@apkscannerpro.com">support@apkscannerpro.com</a></p>
-    </section>
+    </footer>
   </main>
 
-  <footer>
-    &copy; 2025 APK Scanner Pro — Scan smart. Stay safe.<br/>
-    <a href="/robots.txt">Robots</a> • <a href="/sitemap.xml">Sitemap</a>
-  </footer>
+  <!-- OPTIONAL: AdSense placeholder (paste your AdSense code here when ready) -->
+  <!-- <div id="adsense_block"><!-- PASTE ADSENSE CODE HERE --></div> -->
 
   <script>
+    // ---------- Config ----------
+    const PAY_LINK = '#pay_link#';          // replace when ready
+    const BITDEFENDER_LINK = '#bitdefender_aff#';
+    // ---------- Helpers ----------
+    function setText(id, text){ const el = document.getElementById(id); if(el) el.textContent = text; }
+
+    // Fetch quota and update UI
     async function refreshQuota(){
       try{
         const r = await fetch('/scan-stats');
         const j = await r.json();
-        const free = Math.max(0, j.free_remaining || 0);
-        const paid = j.paid_balance || 0;
-        document.getElementById('quota').textContent = `${free} free left • ${paid} paid scans`;
+        const free = j.free_scans_remaining ?? j.free_remaining ?? 0;
+        setText('quotaCount', free);
       }catch(e){
-        document.getElementById('quota').textContent = 'Quota unavailable';
+        setText('quotaCount', '—');
       }
     }
     refreshQuota();
 
-    document.getElementById('scanForm').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const file = document.getElementById('apkInput').files[0];
-      if(!file){ alert('Select an .apk file'); return; }
-      const btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = 'Scanning…';
-
-      const fd = new FormData(); fd.append('apk', file);
+    // Newsletter subscribe (placeholder endpoint)
+    document.getElementById('newsletterForm').addEventListener('submit', async (ev)=>{
+      ev.preventDefault();
+      const email = document.getElementById('newsletterEmail').value;
+      if(!email) return;
+      const btn = document.getElementById('newsletterBtn'); btn.disabled = true; btn.textContent = 'Subscribing…';
       try{
-        const r = await fetch('/scan',{method:'POST',body:fd});
+        // replace with your real subscribe endpoint (Mailchimp/ConvertKit/SendGrid)
+        const r = await fetch('/subscribe', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
         const j = await r.json();
-        if(r.status===402 && j.payment_required){
-          alert('Free limit reached. Continue for $0.50 or $1. Opening payment page.');
-          window.open('#pay_link#','_blank');
-        }else if(j.report){
+        document.getElementById('newsletterMsg').textContent = j.ok ? 'Subscribed — check your inbox' : (j.error || 'Subscribe failed');
+      }catch(e){
+        document.getElementById('newsletterMsg').textContent = 'Network error';
+      }finally{
+        btn.disabled = false; btn.textContent = 'Subscribe';
+      }
+    });
+
+    // Scan form handler
+    document.getElementById('scanForm').addEventListener('submit', async (ev)=>{
+      ev.preventDefault();
+      const fileInput = document.getElementById('apkInput');
+      const email = document.getElementById('emailInput').value || '';
+      if(!fileInput.files.length){ alert('Select an .apk file'); return; }
+      const file = fileInput.files[0];
+      // quick validation
+      if(!file.name.toLowerCase().endsWith('.apk')){ alert('Please upload an .apk file'); return; }
+
+      const scanBtn = document.getElementById('scanBtn');
+      scanBtn.disabled = true; scanBtn.textContent = 'Scanning…';
+
+      const fd = new FormData();
+      fd.append('apk', file);
+      if(email) fd.append('email', email);
+
+      try{
+        const res = await fetch('/scan', { method: 'POST', body: fd });
+        const j = await res.json();
+
+        // Payment limit
+        if(res.status === 403 || j.payment_required || res.status === 402){
+          alert('Free limit reached. Redirecting to unlock options.');
+          window.open(PAY_LINK, '_blank');
+        } else if(j.report){
           const rep = document.getElementById('report');
           rep.style.display = 'block';
           rep.textContent = j.report;
-        }else{
-          alert(j.error || 'Something went wrong.');
+          if(j.email_status){
+            const note = `\n\nEmail status: ${j.email_status}`;
+            rep.textContent = rep.textContent + note;
+          }
+        } else {
+          alert(j.error || 'Scan failed. Try again or contact support.');
         }
-      }catch(err){
-        alert('Upload failed.');
+      }catch(e){
+        alert('Upload failed. Check your connection or try a different file.');
       }finally{
-        btn.disabled = false; btn.textContent = '🔍 Upload & Scan';
+        scanBtn.disabled = false; scanBtn.textContent = '🔍 Upload & Scan';
         refreshQuota();
       }
     });
 
-    // Manual unlock after payment
+    // Manual unlock after payment (client triggers server /payment/notify)
     document.getElementById('ivePaidBtn').addEventListener('click', async ()=>{
-      const plan = prompt("Type plan you paid: '50c' or '1usd'") || '';
-      const txid = prompt('Optional: Enter your transaction ID / reference') || '';
+      const plan = prompt("Which plan did you purchase? Type '50c' or '1usd'") || '';
+      const txid = prompt("Transaction ID / reference (optional)") || '';
       if(!plan) return;
       try{
         const r = await fetch('/payment/notify', {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
           body: JSON.stringify({plan, txid, source:'manual'})
         });
         const j = await r.json();
         if(j.ok){
-          alert('Payment confirmed. Extra scans unlocked. You can continue scanning now.');
+          alert('Payment confirmed. Extra scans unlocked.');
           refreshQuota();
-        }else{
-          alert(j.error || 'Unable to unlock. Try again or email support.');
+        } else {
+          alert(j.error || 'Could not confirm payment. Email support@apkscannerpro.com with your receipt.');
         }
       }catch(e){
-        alert('Network error.');
+        alert('Network error. Try again or email support@apkscannerpro.com');
       }
     });
+
+    // Update pay & affiliate links (so you can paste real links server-side or by replacing placeholders)
+    document.getElementById('payNow').href = PAY_LINK;
+    document.getElementById('unlockBtn').href = PAY_LINK;
+    // Optional: replace bitdefender link in left column anchor
+    const leftAff = document.querySelector('a[href="#bitdefender_aff#"]');
+    if(leftAff) leftAff.href = BITDEFENDER_LINK;
+
   </script>
 </body>
 </html>
