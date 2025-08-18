@@ -72,8 +72,10 @@
       flex-direction: column;
       gap: 1rem;
     }
-    input[type="file"] {
+    input[type="file"], input[type="email"], input[type="text"] {
       padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
     }
     button {
       background: #1a73e8;
@@ -100,13 +102,26 @@
       margin-top: 2rem;
       background: #222;
       color: white;
-      padding: 1rem;
+      padding: 1.5rem;
       text-align: center;
     }
     footer a {
       color: #1a73e8;
       text-decoration: none;
       margin: 0 0.5rem;
+    }
+    footer form {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    footer input {
+      padding: 0.5rem;
+      border: none;
+      border-radius: 6px;
+      width: 200px;
     }
     .popup {
       display: none;
@@ -189,6 +204,13 @@ function closePopup() {
 <footer>
   <p>© 2025 APK Scanner Pro | <a href="/privacy">Privacy Policy</a> | <a href="/terms">Terms of Service</a></p>
   <p>Contact: <a href="mailto:support@apkscannerpro.com">support@apkscannerpro.com</a></p>
+
+  <!-- Newsletter Form -->
+  <form method="POST" action="/subscribe">
+    <input type="text" name="name" placeholder="Your Name" required>
+    <input type="email" name="email" placeholder="Your Email" required>
+    <button type="submit">Subscribe</button>
+  </form>
 </footer>
 
 <!-- Google AdSense Placeholder -->
