@@ -154,15 +154,13 @@
   <p>Upload your Android APK file below. Our AI + VirusTotal system scans for viruses, malware, and security threats. You’ll receive a full report by email.</p>
 
   <form id="scanForm" enctype="multipart/form-data" method="POST" action="/scan">
-    <input type="file" name="apk_file" accept=".apk" required>
+    <input type="file" name="apk" accept=".apk" required>
     <input type="email" name="email" placeholder="Enter your email for report" required>
     <button type="submit">🔍 Scan APK</button>
   </form>
 
-  <div class="quota">
-    <strong>Quota:</strong> 200 free scans per day.  
-    After that: <strong>$0.50 / scan</strong> or <strong>$1 / scan</strong>.  
-    <button onclick="showPopup()">Proceed to Payment</button>
+  <div class="quota" id="quotaBox">
+    <strong>Quota:</strong> Checking available scans...
   </div>
 
   <h2>Why Choose APK Scanner Pro?</h2>
@@ -199,6 +197,24 @@ function showPopup() {
 function closePopup() {
   document.getElementById("paymentPopup").style.display = "none";
 }
+
+// Fetch scan quota
+async function fetchQuota() {
+  try {
+    const res = await fetch("/scan-stats");
+    const data = await res.json();
+    const quotaBox = document.getElementById("quotaBox");
+
+    if (data.free_scans_remaining > 0) {
+      quotaBox.innerHTML = `<strong>Quota:</strong> ${data.free_scans_remaining} free scans remaining today.`;
+    } else {
+      quotaBox.innerHTML = `<strong>Quota:</strong> Daily free scans used up. <button onclick="showPopup()">Proceed to Payment</button>`;
+    }
+  } catch (err) {
+    console.error("Failed to fetch quota", err);
+  }
+}
+fetchQuota();
 </script>
 
 <footer>
@@ -214,7 +230,6 @@ function closePopup() {
 </footer>
 
 <!-- Google AdSense Placeholder -->
-<!-- Replace with actual AdSense script when approved -->
 <div style="text-align:center; margin:2rem;">
   <p>[ Google AdSense Ads Here ]</p>
 </div>
