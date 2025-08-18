@@ -1,45 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Terms of Service for APK Scanner Pro - Understand the rules and conditions for using our APK scanning services.">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Terms of Service - APK Scanner Pro</title>
+  <meta name="description" content="Read the Terms of Service of APK Scanner Pro before using our AI-powered APK malware scanning tool." />
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
-
-  <header class="bg-indigo-700 text-white p-6 text-center shadow-md">
-    <h1 class="text-3xl font-bold">Terms of Service</h1>
+<body class="bg-gray-50 text-gray-900 font-sans">
+  <header class="bg-blue-900 text-white p-6">
+    <div class="container mx-auto flex items-center justify-between">
+      <a href="/" class="flex items-center space-x-3">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="APK Scanner Pro Logo" class="h-10">
+        <span class="text-2xl font-bold">APK Scanner Pro</span>
+      </a>
+    </div>
   </header>
 
-  <main class="max-w-4xl mx-auto p-6">
-    <p class="mb-4">By using <strong>APK Scanner Pro</strong>, you agree to the following terms and conditions. Please read carefully before using our services.</p>
+  <main class="container mx-auto px-6 py-12">
+    <h1 class="text-3xl font-bold mb-6">Terms of Service</h1>
+    <p class="mb-4">These Terms of Service ("Terms") govern your use of <strong>APK Scanner Pro</strong>. By accessing or using our service, you agree to these Terms.</p>
 
-    <h2 class="text-2xl font-semibold mt-6 mb-2">Use of Service</h2>
-    <ul class="list-disc pl-6 mb-4">
-      <li>You may only upload APK files you own the rights to analyze.</li>
-      <li>Do not use our service for illegal, harmful, or malicious activities.</li>
-      <li>We reserve the right to refuse service at our discretion.</li>
-    </ul>
+    <h2 class="text-xl font-semibold mt-6 mb-2">1. Use of Service</h2>
+    <p class="mb-4">You may use our APK scanning tool solely for lawful purposes. You agree not to misuse the service, attempt to disrupt functionality, or upload malicious files outside testing purposes.</p>
 
-    <h2 class="text-2xl font-semibold mt-6 mb-2">Limitation of Liability</h2>
-    <p class="mb-4">While we strive for accuracy, APK Scanner Pro provides scan results “as is” without guarantees. We are not liable for damages resulting from reliance on scan results.</p>
+    <h2 class="text-xl font-semibold mt-6 mb-2">2. No Warranties</h2>
+    <p class="mb-4">APK Scanner Pro provides its services "as is." We make no warranties, express or implied, regarding accuracy, reliability, or availability.</p>
 
-    <h2 class="text-2xl font-semibold mt-6 mb-2">User Responsibilities</h2>
-    <p class="mb-4">You are responsible for your uploaded files and ensuring compliance with applicable laws.</p>
+    <h2 class="text-xl font-semibold mt-6 mb-2">3. Limitation of Liability</h2>
+    <p class="mb-4">We are not liable for any damages resulting from use or inability to use the service, including loss of data, profits, or security issues.</p>
 
-    <h2 class="text-2xl font-semibold mt-6 mb-2">Changes to Terms</h2>
-    <p class="mb-4">We may update these Terms at any time. Continued use of the service means you accept any changes.</p>
+    <h2 class="text-xl font-semibold mt-6 mb-2">4. Changes to Terms</h2>
+    <p class="mb-4">We may update these Terms at any time. Updates will be posted on this page, and your continued use constitutes acceptance of the changes.</p>
 
-    <h2 class="text-2xl font-semibold mt-6 mb-2">Contact Us</h2>
-    <p class="mb-4">For questions, contact us at <a href="mailto:support@apkscannerpro.com" class="text-indigo-600">support@apkscannerpro.com</a>.</p>
+    <h2 class="text-xl font-semibold mt-6 mb-2">5. Governing Law</h2>
+    <p class="mb-4">These Terms are governed by applicable international and local laws. Disputes will be subject to the jurisdiction of relevant courts.</p>
   </main>
 
-  <footer class="bg-gray-100 text-center py-4 mt-8 border-t">
-    <p class="text-sm">&copy; 2025 APK Scanner Pro. All rights reserved.</p>
-    <p class="text-xs mt-2"><a href="/" class="text-indigo-600">← Back to Home</a></p>
+  <footer class="bg-blue-900 text-white py-6 mt-12">
+    <div class="container mx-auto text-center">
+      <p>&copy; {{ current_year }} APK Scanner Pro. All rights reserved.</p>
+    </div>
   </footer>
-
 </body>
 </html>
