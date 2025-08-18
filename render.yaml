@@ -2,8 +2,28 @@ services:
   - type: web
     name: apk-scanner-backend
     runtime: python
+    plan: free   # change to 'starter' or higher if you need more resources
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn apk_scanner_pro.api_server:app --bind 0.0.0.0:$PORT --workers 2
+    autoDeploy: true
     envVars:
+      - key: OPENAI_API_KEY
+        sync: false    # Set in Render Dashboard
+      - key: EMAIL_USER
+        sync: false    # e.g. support@apkscannerpro.com
+      - key: EMAIL_PASS
+        sync: false    # Gmail app password or SMTP pass
+      - key: SMTP_SERVER
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
       - key: VT_API_KEY
-        sync: false   # store your VirusTotal API key in Render Dashboard
+        sync: false    # Optional VirusTotal API key for later
+    scaling:
+      minInstances: 1   # keep 1 running at all times (no downtime)
+      maxInstances: 3   # can scale up automatically if traffic increases
+    healthCheckPath: /
+    disk:
+      name: app-data
+      mountPath: /opt/render/project/data
+      sizeGB: 1
