@@ -12,6 +12,7 @@ app = Flask(__name__, static_folder="static", template_folder="templates")
 # Storage paths (Render uses ephemeral FS, so we put everything under /tmp)
 UPLOAD_DIR = "/tmp"
 SCAN_DATA_FILE = os.path.join("/tmp", "scan_data.json")
+SUBSCRIBERS_FILE = os.path.join("/tmp", "subscribers.txt")
 
 # Business rules
 MAX_FREE_SCANS_PER_DAY = 200  # daily free scan limit
@@ -131,6 +132,24 @@ def scan():
         "scan_count_today": data["scan_count"],
         "email_status": email_status
     })
+
+
+@app.route("/subscribe", methods=["POST"])
+def subscribe():
+    """Collect emails for newsletter"""
+    email = request.form.get("email")
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
+    try:
+        os.makedirs(os.path.dirname(SUBSCRIBERS_FILE), exist_ok=True)
+        with open(SUBSCRIBERS_FILE, "a") as f:
+            f.write(email + "\n")
+        log.info(f"New subscriber: {email}")
+        return jsonify({"message": "Subscribed successfully!"})
+    except Exception:
+        log.exception("Failed to save subscriber email")
+        return jsonify({"error": "Failed to save subscription"}), 500
 
 
 @app.route("/robots.txt")
