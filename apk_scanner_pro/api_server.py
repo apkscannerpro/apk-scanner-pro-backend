@@ -93,6 +93,12 @@ def refund_policy():
     return render_template("refund-policy.html")
 
 
+@app.route("/thank-you", methods=["GET"])
+def thank_you():
+    """Serve thank-you page after payment success"""
+    return render_template("thank-you.html")
+
+
 @app.route("/scan-stats", methods=["GET"])
 def scan_stats():
     """Return remaining free scans for today"""
@@ -184,14 +190,33 @@ def subscribe():
 
 @app.route("/robots.txt")
 def robots():
-    """Serve robots.txt"""
-    return send_file(os.path.join(app.static_folder, "robots.txt"), mimetype="text/plain")
+    """Serve robots.txt (fallback if file missing)"""
+    path = os.path.join(app.static_folder, "robots.txt")
+    if os.path.exists(path):
+        return send_file(path, mimetype="text/plain")
+    return (
+        "User-agent: *\nAllow: /\nSitemap: https://apkscannerpro.com/sitemap.xml\n",
+        200,
+        {"Content-Type": "text/plain"},
+    )
 
 
 @app.route("/sitemap.xml")
 def sitemap():
-    """Serve sitemap.xml"""
-    return send_file(os.path.join(app.static_folder, "sitemap.xml"), mimetype="application/xml")
+    """Serve sitemap.xml (fallback if file missing)"""
+    path = os.path.join(app.static_folder, "sitemap.xml")
+    if os.path.exists(path):
+        return send_file(path, mimetype="application/xml")
+    sitemap_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://apkscannerpro.com/</loc></url>
+  <url><loc>https://apkscannerpro.com/privacy</loc></url>
+  <url><loc>https://apkscannerpro.com/terms</loc></url>
+  <url><loc>https://apkscannerpro.com/pricing</loc></url>
+  <url><loc>https://apkscannerpro.com/refund-policy</loc></url>
+  <url><loc>https://apkscannerpro.com/thank-you</loc></url>
+</urlset>"""
+    return sitemap_xml, 200, {"Content-Type": "application/xml"}
 
 
 @app.route("/ping")
