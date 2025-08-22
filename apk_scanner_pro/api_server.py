@@ -81,6 +81,18 @@ def terms():
     return render_template("terms.html")
 
 
+@app.route("/pricing", methods=["GET"])
+def pricing():
+    """Serve pricing page"""
+    return render_template("pricing.html")
+
+
+@app.route("/refund-policy", methods=["GET"])
+def refund_policy():
+    """Serve refund policy page"""
+    return render_template("refund-policy.html")
+
+
 @app.route("/scan-stats", methods=["GET"])
 def scan_stats():
     """Return remaining free scans for today"""
