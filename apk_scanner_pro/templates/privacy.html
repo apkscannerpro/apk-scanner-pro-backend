@@ -4,39 +4,90 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Privacy Policy - APK Scanner Pro</title>
-  <meta name="description" content="Read the Privacy Policy of APK Scanner Pro to understand how your data is collected, stored, and used responsibly." />
+  
+  <!-- SEO Meta -->
+  <meta name="description" content="Read the Privacy Policy of APK Scanner Pro to understand how we handle your data responsibly. Learn about data collection, usage, cookies, and security practices." />
+  <meta name="keywords" content="APK Scanner Privacy Policy, APK file security, mobile security, app scanner, data protection policy, APK Scanner Pro" />
+  <meta name="robots" content="index, follow">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="Privacy Policy - APK Scanner Pro">
+  <meta property="og:description" content="Understand how APK Scanner Pro protects your privacy, manages your data, and ensures secure APK scanning.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://apkscannerpro.com/privacy.html">
+  <meta property="og:image" content="https://apkscannerpro.com/static/logo.png">
+  
+  <!-- Schema Markup for AEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Privacy Policy - APK Scanner Pro",
+    "url": "https://apkscannerpro.com/privacy.html",
+    "description": "Read the Privacy Policy of APK Scanner Pro to learn how we collect, use, and safeguard your data when scanning APK files.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "APK Scanner Pro",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://apkscannerpro.com/static/logo.png"
+      }
+    }
+  }
+  </script>
+  
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans">
-  <header class="bg-blue-900 text-white p-6">
+  <!-- Header -->
+  <header class="bg-blue-900 text-white p-6 shadow-md">
     <div class="container mx-auto flex items-center justify-between">
       <a href="/" class="flex items-center space-x-3">
         <img src="{{ url_for('static', filename='logo.png') }}" alt="APK Scanner Pro Logo" class="h-10">
-        <span class="text-2xl font-bold">APK Scanner Pro</span>
+        <span class="text-2xl font-bold tracking-wide">APK Scanner Pro</span>
       </a>
     </div>
   </header>
 
+  <!-- Main Content -->
   <main class="container mx-auto px-6 py-12">
-    <h1 class="text-3xl font-bold mb-6">Privacy Policy</h1>
-    <p class="mb-4">At <strong>APK Scanner Pro</strong>, we respect your privacy and are committed to protecting your personal data. This Privacy Policy outlines how we collect, use, and safeguard your information when you use our service.</p>
+    <h1 class="text-4xl font-bold mb-6">Privacy Policy</h1>
+    <p class="mb-6 text-lg">At <strong>APK Scanner Pro</strong>, we respect your privacy and are committed to safeguarding your personal data. This Privacy Policy explains how we handle your information when you use our services.</p>
 
-    <h2 class="text-xl font-semibold mt-6 mb-2">1. Information We Collect</h2>
-    <p class="mb-4">We may collect limited personal information, such as your email address when you subscribe to our newsletter. We do not store uploaded APK files permanently.</p>
+    <h2 class="text-2xl font-semibold mt-8 mb-3">1. Information We Collect</h2>
+    <p class="mb-4">We may collect limited personal information, such as your email address if you subscribe to our newsletter. Uploaded APK files are scanned securely and are <strong>not stored permanently</strong>.</p>
 
-    <h2 class="text-xl font-semibold mt-6 mb-2">2. How We Use Your Information</h2>
-    <p class="mb-4">Your information is used strictly for providing the service, sending security updates, and communicating with you if you subscribe. We do not sell your data.</p>
+    <h2 class="text-2xl font-semibold mt-8 mb-3">2. How We Use Your Information</h2>
+    <p class="mb-4">Your information is used to:</p>
+    <ul class="list-disc list-inside mb-4">
+      <li>Provide secure APK scanning services</li>
+      <li>Send essential security updates</li>
+      <li>Communicate with you if you subscribe</li>
+    </ul>
+    <p class="mb-4"><strong>We do not sell, rent, or trade your data.</strong></p>
 
-    <h2 class="text-xl font-semibold mt-6 mb-2">3. Cookies</h2>
-    <p class="mb-4">Our site may use cookies for analytics and to improve performance. You may disable cookies in your browser settings.</p>
+    <h2 class="text-2xl font-semibold mt-8 mb-3">3. Cookies & Tracking</h2>
+    <p class="mb-4">Our website may use cookies for analytics and performance improvements. You can disable cookies in your browser settings at any time.</p>
 
-    <h2 class="text-xl font-semibold mt-6 mb-2">4. Data Security</h2>
-    <p class="mb-4">We implement strict security measures to protect your information against unauthorized access or disclosure.</p>
+    <h2 class="text-2xl font-semibold mt-8 mb-3">4. Data Security</h2>
+    <p class="mb-4">We implement strict <strong>encryption</strong> and <strong>security protocols</strong> to ensure your information remains safe from unauthorized access or misuse.</p>
 
-    <h2 class="text-xl font-semibold mt-6 mb-2">5. Contact Us</h2>
-    <p class="mb-4">If you have questions about this Privacy Policy, please contact us at <a href="mailto:support@apkscannerpro.com" class="text-blue-600">support@apkscannerpro.com</a>.</p>
+    <h2 class="text-2xl font-semibold mt-8 mb-3">5. Your Rights</h2>
+    <p class="mb-4">You have the right to:</p>
+    <ul class="list-disc list-inside mb-4">
+      <li>Request deletion of your data</li>
+      <li>Unsubscribe from communications anytime</li>
+      <li>Contact us regarding data handling practices</li>
+    </ul>
+
+    <h2 class="text-2xl font-semibold mt-8 mb-3">6. Contact Us</h2>
+    <p class="mb-4">If you have questions about this Privacy Policy, please contact us at:</p>
+    <p class="mb-4">
+      📧 <a href="mailto:support@apkscannerpro.com" class="text-blue-600">support@apkscannerpro.com</a>
+    </p>
   </main>
 
+  <!-- Footer -->
   <footer class="bg-blue-900 text-white py-6 mt-12">
     <div class="container mx-auto text-center">
       <p>&copy; {{ current_year }} APK Scanner Pro. All rights reserved.</p>
