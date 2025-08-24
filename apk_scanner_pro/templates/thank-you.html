@@ -6,10 +6,15 @@
   <title>Payment Successful — APK Scanner Pro</title>
   <link rel="icon" href="/static/favicon.ico" type="image/x-icon"/>
   <style>
-    body{background:#0a0a0a;color:#fff;font-family:Poppins,Arial,sans-serif;margin:0}
-    .wrap{max-width:720px;margin:60px auto;padding:0 16px;text-align:center}
-    a{color:#00c6ff}
-    .btn{background:#ff4757;color:#fff;border:none;border-radius:10px;padding:12px 20px;font-size:16px;cursor:pointer}
+    body {background:#0a0a0a;color:#fff;font-family:Poppins,Arial,sans-serif;margin:0}
+    .wrap {max-width:720px;margin:60px auto;padding:0 16px;text-align:center}
+    a {color:#00c6ff;text-decoration:none}
+    .btn {background:#ff4757;color:#fff;border:none;border-radius:10px;padding:12px 20px;font-size:16px;cursor:pointer}
+    footer {margin-top:60px;font-size:14px;opacity:.8}
+    .social-icons {margin:20px 0}
+    .social-icons a {display:inline-block;margin:0 10px}
+    .social-icons img {width:32px;height:32px;filter:invert(1);transition:0.3s}
+    .social-icons img:hover {transform:scale(1.1)}
   </style>
 </head>
 <body>
@@ -18,6 +23,19 @@
     <p>Your payment was received. Your account has been credited with one scan.</p>
     <p><button class="btn" onclick="window.location.href='/'">Return & Scan Now</button></p>
     <p style="opacity:.8">If the credit doesn’t appear instantly, wait 10–20 seconds for the webhook to arrive and refresh.</p>
+
+    <footer>
+      <div class="social-icons">
+        <a href="https://www.tiktok.com/@apkscanner" target="_blank">
+          <img src="https://cdn-icons-png.flaticon.com/512/3046/3046120.png" alt="TikTok"/>
+        </a>
+        <a href="https://www.instagram.com/apkscannerpro/" target="_blank">
+          <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram"/>
+        </a>
+      </div>
+      <p>© 2025 APK Scanner Pro. All rights reserved.</p>
+      <p><a href="/privacy.html">Privacy Policy</a> | <a href="/terms.html">Terms of Service</a></p>
+    </footer>
   </div>
 </body>
 </html>
