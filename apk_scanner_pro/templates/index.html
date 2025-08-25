@@ -149,57 +149,59 @@
   </footer>
 
   <script>
-    async function updateQuota() {
-      const q = document.getElementById('quota');
-      try {
-        const res = await fetch('/scan-stats');
-        const data = await res.json();
-        if (data.free_scans_remaining > 0) {
-          q.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today`;
-        } else {
-          q.innerHTML = `⚠️ No free scans left. <a href="#" onclick="showPopup()">Buy More</a>`;
-        }
-      } catch {
-        q.textContent = "⚠️ Unable to load quota.";
+  async function updateQuota() {
+    const q = document.getElementById('quota');
+    try {
+      const res = await fetch('/scan-stats');
+      const data = await res.json();
+      if (data.free_scans_remaining > 0) {
+        q.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today`;
+      } else {
+        q.innerHTML = `⚠️ No free scans left. <a href="#" onclick="showPopup()">Buy More</a>`;
       }
+    } catch {
+      q.textContent = "⚠️ Unable to load quota.";
     }
-    updateQuota();
+  }
+  updateQuota();
 
-    document.getElementById('scanForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const fileInput=document.getElementById('apkInput');
-      const linkInput=document.getElementById('apkLink');
-      const emailInput=document.getElementById('emailInput');
-      if ((!fileInput.files.length && !linkInput.value) || !emailInput.value) {
-        return alert('Provide an APK file OR link, and your email.');
-      }
-      const fd=new FormData();
-      if(fileInput.files.length) fd.append('apk',fileInput.files[0]);
-      if(linkInput.value) fd.append('apk_link',linkInput.value);
-      fd.append('email',emailInput.value);
-      const btn=e.target.querySelector('button');
-      btn.disabled=true; btn.textContent='Scanning...';
-      const reportBox=document.getElementById('report'); reportBox.textContent='';
-      try {
-        const res=await fetch('/scan',{method:'POST',body:fd});
-        const json=await res.json();
-        if(res.status===403 && json.payment_required){ showPopup(); }
-        else if(json.report){ reportBox.innerHTML=`<pre>${json.report}</pre>`; }
-        else { reportBox.style.color='#f66'; reportBox.textContent=json.error||'Scan failed'; }
-        updateQuota();
-      } catch { reportBox.style.color='#f66'; reportBox.textContent='Upload failed'; }
-      btn.disabled=false; btn.textContent='Upload / Submit Link & Scan';
-    });
-
-    document.getElementById('newsletterForm').addEventListener('submit', async e=>{
-      e.preventDefault();
-      const fd=new FormData(e.target);
-      const res=await fetch('/subscribe',{method:'POST',body:fd});
+  document.getElementById('scanForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const fileInput=document.getElementById('apkInput');
+    const linkInput=document.getElementById('apkLink');
+    const emailInput=document.getElementById('emailInput');
+    if ((!fileInput.files.length && !linkInput.value) || !emailInput.value) {
+      return alert('Provide an APK file OR link, and your email.');
+    }
+    const fd=new FormData();
+    if(fileInput.files.length) fd.append('apk',fileInput.files[0]);
+    if(linkInput.value) fd.append('apk_url',linkInput.value); <!-- ✅ FIXED -->
+    fd.append('email',emailInput.value);
+    const btn=e.target.querySelector('button');
+    btn.disabled=true; btn.textContent='Scanning...';
+    const reportBox=document.getElementById('report'); reportBox.textContent='';
+    try {
+      const res=await fetch('/scan',{method:'POST',body:fd});
       const json=await res.json();
-      alert(json.ok?'Subscribed!':(json.error||'Subscribe failed'));
-    });
+      if(res.status===403 && json.payment_required){ showPopup(); }
+      else if(json.report){ reportBox.innerHTML=`<pre>${json.report}</pre>`; }
+      else { reportBox.style.color='#f66'; reportBox.textContent=json.error||'Scan failed'; }
+      updateQuota();
+    } catch { reportBox.style.color='#f66'; reportBox.textContent='Upload failed'; }
+    btn.disabled=false; btn.textContent='Upload / Submit Link & Scan';
+  });
 
-    function showPopup(){ document.getElementById('paymentPopup').style.display='flex'; }
-  </script>
+  document.getElementById('newsletterForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const fd=new FormData(e.target);
+    const res=await fetch('/subscribe',{method:'POST',body:fd});
+    const json=await res.json();
+    alert(json.ok?'Subscribed!':(json.error||'Subscribe failed'));
+  });
+
+  function showPopup(){ document.getElementById('paymentPopup').style.display='flex'; }
+</script>
+
 </body>
 </html>
+
