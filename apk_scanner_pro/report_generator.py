@@ -1,6 +1,7 @@
 import openai
 import os
 import smtplib
+import textwrap
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
@@ -24,11 +25,11 @@ def generate_report(scan_result):
     {threat_data}
     """
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
+    response = openai.chat.completions.create(
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
     )
-    return response['choices'][0]['message']['content']
+    return response.choices[0].message.content
 
 
 # === Generate PDF report ===
@@ -37,16 +38,17 @@ def generate_pdf_report(report_text):
     pdf = canvas.Canvas(buffer, pagesize=letter)
     pdf.setFont("Helvetica", 11)
 
-    # Wrap long lines manually
-    lines = report_text.split("\n")
+    # Wrap text properly
     y = 750
-    for line in lines:
-        if y < 50:
-            pdf.showPage()
-            pdf.setFont("Helvetica", 11)
-            y = 750
-        pdf.drawString(50, y, line.strip())
-        y -= 15
+    for line in report_text.split("\n"):
+        wrapped_lines = textwrap.wrap(line, width=90)  # 90 chars per line
+        for wrap_line in wrapped_lines:
+            if y < 50:
+                pdf.showPage()
+                pdf.setFont("Helvetica", 11)
+                y = 750
+            pdf.drawString(50, y, wrap_line)
+            y -= 15
 
     pdf.save()
     buffer.seek(0)
