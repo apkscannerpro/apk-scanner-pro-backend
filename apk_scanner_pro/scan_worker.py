@@ -1,20 +1,20 @@
 import requests
 import os
+import time
 
 # --- VirusTotal API setup ---
-# Hardcoded API key for now (later you can move it to Render env vars)
-VIRUSTOTAL_API_KEY = "6668945fd6178fffbaed43eae32ed42d21c2f2904f5b97908df087983632c411"
+VIRUSTOTAL_API_KEY = os.getenv("VT_API_KEY")  # From Render Env Var
 VT_SCAN_URL = "https://www.virustotal.com/api/v3/files"
 VT_HEADERS = {"x-apikey": VIRUSTOTAL_API_KEY}
 
 
 def scan_apk(file_path):
     """
-    Uploads an APK to VirusTotal, fetches the analysis report, 
-    and returns it as a dict.
+    Uploads an APK to VirusTotal, polls the analysis report,
+    and returns a summarized dict.
     """
     try:
-        # Upload file
+        # Upload file to VirusTotal
         with open(file_path, "rb") as f:
             files = {"file": (os.path.basename(file_path), f)}
             upload_resp = requests.post(VT_SCAN_URL, headers=VT_HEADERS, files=files)
@@ -27,16 +27,27 @@ def scan_apk(file_path):
         if not analysis_id:
             return {"error": "Failed to get analysis ID from VirusTotal"}
 
-        # Poll for analysis
+        # Poll for analysis (wait up to ~90s)
         analysis_url = f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
-        for _ in range(10):  # poll up to 10 times
+        for _ in range(18):  # 18 * 5s = 90s
             analysis_resp = requests.get(analysis_url, headers=VT_HEADERS)
             if analysis_resp.status_code != 200:
                 return {"error": f"Analysis request failed: {analysis_resp.status_code}"}
             analysis = analysis_resp.json()
             status = analysis.get("data", {}).get("attributes", {}).get("status")
             if status == "completed":
-                return analysis
+                stats = analysis.get("data", {}).get("attributes", {}).get("stats", {})
+                malicious = stats.get("malicious", 0)
+                suspicious = stats.get("suspicious", 0)
+                harmless = stats.get("harmless", 0)
+                return {
+                    "malicious": malicious,
+                    "suspicious": suspicious,
+                    "harmless": harmless,
+                    "raw": analysis
+                }
+            time.sleep(5)
+
         return {"error": "Timed out waiting for analysis results"}
 
     except Exception as e:
