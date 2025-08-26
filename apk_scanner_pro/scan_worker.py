@@ -16,6 +16,8 @@ BITDEFENDER_AFFILIATE_LINK = "https://www.bitdefender.com/site/view/trial.html?a
 # --- AI layer ---
 AI_ENABLED = True
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# ✅ Fixed: proper instantiation for openai>=1.0.0
 client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 
