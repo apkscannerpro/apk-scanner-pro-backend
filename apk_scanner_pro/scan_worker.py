@@ -11,35 +11,39 @@ VT_URL_SCAN = "https://www.virustotal.com/api/v3/urls"
 VT_HEADERS = {"x-apikey": VIRUSTOTAL_API_KEY}
 
 # --- Bitdefender Affiliate (no API, just link) ---
-BITDEFENDER_AFFILIATE_LINK = "https://www.bitdefender.com/site/view/trial.html?affid=12345"  # replace with your real affiliate link
+BITDEFENDER_AFFILIATE_LINK = (
+    "https://www.bitdefender.com/site/view/trial.html?affid=12345"
+)  # replace with real affiliate link
 
-# --- AI layer ---
+# --- AI Layer ---
 AI_ENABLED = True
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-# ✅ Fixed: proper instantiation for openai>=1.0.0
 client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 
 def _ai_assistant_summary(report_text: str):
     """
-    Use LLM to summarize multi-engine scan into a simple verdict.
+    Summarize scan results into human-friendly verdict.
     """
     if not client:
         return {"ai_summary": "⚠️ AI not configured. Using raw VT verdicts."}
 
     try:
-        prompt = f"""
-        Analyze the following APK/URL scan results and summarize risk level 
-        (Safe / Suspicious / Malicious). Be concise and user-friendly.
-
-        Report:
-        {report_text}
-        """
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=150
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"""
+Analyze the following APK/URL scan results and summarize risk level
+(Safe / Suspicious / Malicious). Be concise and user-friendly.
+
+Report:
+{report_text}
+""",
+                }
+            ],
+            max_tokens=150,
         )
         return {"ai_summary": resp.choices[0].message.content.strip()}
     except Exception as e:
@@ -48,13 +52,13 @@ def _ai_assistant_summary(report_text: str):
 
 def _normalize_results(vt_stats, ai_summary=None):
     """
-    Normalize data into unified schema with affiliate promotion.
+    Normalize VirusTotal + AI results into a clean JSON structure.
     """
     result = {
         "verdict": "Safe",
-        "virustotal": vt_stats,
+        "virustotal": vt_stats or {},
         "ai": ai_summary or {},
-        "affiliate_offer": f"Protect your device with Bitdefender 👉 {BITDEFENDER_AFFILIATE_LINK}"
+        "affiliate_offer": f"Protect your device with Bitdefender 👉 {BITDEFENDER_AFFILIATE_LINK}",
     }
 
     if vt_stats.get("malicious", 0) > 0:
@@ -66,9 +70,9 @@ def _normalize_results(vt_stats, ai_summary=None):
 
 
 def _poll_analysis(analysis_id):
-    """Poll VirusTotal until complete."""
+    """Poll VirusTotal until scan is finished."""
     analysis_url = f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
-    for _ in range(18):  # up to ~90s
+    for _ in range(18):  # ~90s max
         resp = requests.get(analysis_url, headers=VT_HEADERS)
         if resp.status_code != 200:
             return {"error": f"Analysis request failed: {resp.status_code}"}
@@ -81,18 +85,20 @@ def _poll_analysis(analysis_id):
 
 
 def scan_apk(file_path):
-    """Scan APK with VirusTotal + AI summarizer (Bitdefender promoted via affiliate)."""
+    """Scan APK file via VirusTotal + AI summarizer."""
     try:
         if not VIRUSTOTAL_API_KEY:
             return {"error": "VirusTotal API key missing."}
 
-        # --- Upload to VirusTotal ---
         with open(file_path, "rb") as f:
             files = {"file": (os.path.basename(file_path), f)}
             vt_resp = requests.post(VT_SCAN_URL, headers=VT_HEADERS, files=files)
 
         if vt_resp.status_code not in (200, 202):
-            return {"error": f"VT upload failed: {vt_resp.status_code}", "details": vt_resp.text}
+            return {
+                "error": f"VT upload failed: {vt_resp.status_code}",
+                "details": vt_resp.text,
+            }
 
         vt_data = vt_resp.json()
         analysis_id = vt_data.get("data", {}).get("id")
@@ -103,10 +109,12 @@ def scan_apk(file_path):
         if "error" in vt_analysis:
             return vt_analysis
 
-        vt_stats = vt_analysis.get("data", {}).get("attributes", {}).get("stats", {})
-
-        # --- AI summarization ---
-        ai_summary = _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
+        vt_stats = (
+            vt_analysis.get("data", {}).get("attributes", {}).get("stats", {}) or {}
+        )
+        ai_summary = (
+            _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
+        )
 
         return _normalize_results(vt_stats, ai_summary)
 
@@ -115,14 +123,17 @@ def scan_apk(file_path):
 
 
 def scan_url(target_url):
-    """Scan URL with VirusTotal + AI summarizer (Bitdefender promoted via affiliate)."""
+    """Scan URL (APK link or Play Store) via VirusTotal + AI summarizer."""
     try:
         if not VIRUSTOTAL_API_KEY:
             return {"error": "VirusTotal API key missing."}
 
         url_resp = requests.post(VT_URL_SCAN, headers=VT_HEADERS, data={"url": target_url})
         if url_resp.status_code not in (200, 202):
-            return {"error": f"VT URL submission failed: {url_resp.status_code}", "details": url_resp.text}
+            return {
+                "error": f"VT URL submission failed: {url_resp.status_code}",
+                "details": url_resp.text,
+            }
 
         vt_data = url_resp.json()
         analysis_id = vt_data.get("data", {}).get("id")
@@ -133,11 +144,14 @@ def scan_url(target_url):
         if "error" in vt_analysis:
             return vt_analysis
 
-        vt_stats = vt_analysis.get("data", {}).get("attributes", {}).get("stats", {})
+        vt_stats = (
+            vt_analysis.get("data", {}).get("attributes", {}).get("stats", {}) or {}
+        )
+        ai_summary = (
+            _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
+        )
 
-        ai_summary = _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
-
-        return _normalize_results(vt_stats, ai_summary=ai_summary)
+        return _normalize_results(vt_stats, ai_summary)
 
     except Exception as e:
         return {"error": f"Exception in scan_url: {str(e)}"}
