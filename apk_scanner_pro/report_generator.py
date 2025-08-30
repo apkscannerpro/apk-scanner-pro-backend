@@ -13,7 +13,7 @@ from werkzeug.utils import secure_filename
 import tempfile
 
 # Import scan functions
-import scan_worker
+from . import scan_worker
 
 # Load API key for OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -211,3 +211,4 @@ def scan():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
