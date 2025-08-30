@@ -133,14 +133,15 @@
   </div>
 
   <!-- FOOTER -->
-  <div class="flex justify-center space-x-4 mt-4">
-  <a href="https://www.tiktok.com/@apkscanner" target="_blank" class="transition-transform transform hover:scale-110 hover:opacity-80">
-    <img src="https://cdn-icons-png.flaticon.com/512/3046/3046120.png" alt="TikTok" class="inline-block" style="width:22px; height:22px;">
-  </a>
-  <a href="https://www.instagram.com/apkscannerpro/" target="_blank" class="transition-transform transform hover:scale-110 hover:opacity-80">
-    <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram" class="inline-block" style="width:22px; height:22px;">
-  </a>
-</div>
+  <footer>
+    <div class="flex justify-center space-x-4 mt-4">
+      <a href="https://www.tiktok.com/@apkscanner" target="_blank" class="transition-transform transform hover:scale-110 hover:opacity-80">
+        <img src="https://cdn-icons-png.flaticon.com/512/3046/3046120.png" alt="TikTok" class="inline-block" style="width:22px; height:22px;">
+      </a>
+      <a href="https://www.instagram.com/apkscannerpro/" target="_blank" class="transition-transform transform hover:scale-110 hover:opacity-80">
+        <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram" class="inline-block" style="width:22px; height:22px;">
+      </a>
+    </div>
     <p>&copy; 2025 APK Scanner Pro • 
       <a href="/pricing">Pricing</a> | 
       <a href="/privacy">Privacy</a> | 
@@ -178,7 +179,7 @@
     }
     const fd=new FormData();
     if(fileInput.files.length) fd.append('apk',fileInput.files[0]);
-    if(linkInput.value) fd.append('apk_url',linkInput.value); <!-- ✅ FIXED -->
+    if(linkInput.value) fd.append('apk_url',linkInput.value);
     fd.append('email',emailInput.value);
     const btn=e.target.querySelector('button');
     btn.disabled=true; btn.textContent='Scanning...';
@@ -203,13 +204,7 @@
   });
 
   function showPopup(){ document.getElementById('paymentPopup').style.display='flex'; }
-</script>
+  </script>
 
 </body>
 </html>
-
-
-
-
-
-
