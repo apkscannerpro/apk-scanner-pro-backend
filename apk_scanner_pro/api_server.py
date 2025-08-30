@@ -6,6 +6,8 @@ import uuid
 import requests
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from werkzeug.exceptions import RequestEntityTooLarge, BadRequest
+from flask_cors import CORS
 
 # Workers (make sure scan_worker has scan_apk and scan_url)
 from .scan_worker import scan_apk as scan_apk_file, scan_url
@@ -15,6 +17,13 @@ from .report_generator import generate_report, send_report_via_email
 # Flask setup
 # ------------------------------------------------------------------------------
 app = Flask(__name__, static_folder="static", template_folder="templates")
+
+# Enable CORS for API endpoints (safe for same-origin; helpful if UI is separate)
+CORS(app, resources={
+    r"/scan": {"origins": "*"},
+    r"/scan-stats": {"origins": "*"},
+    r"/subscribe": {"origins": "*"}
+})
 
 # Max upload size: ~150MB (typical APKs << 150MB)
 app.config["MAX_CONTENT_LENGTH"] = 150 * 1024 * 1024
@@ -158,11 +167,12 @@ def scan():
     user_email, apk_file, tmp_path, url_param = None, None, None, None
 
     try:
+        # --- Read body safely regardless of Content-Type
+        json_body = request.get_json(silent=True) or {}
+        form = request.form
+
         # --- Get email ---
-        if request.is_json:
-            user_email = request.json.get("email")
-        else:
-            user_email = request.form.get("email")
+        user_email = (form.get("email") or json_body.get("email"))
 
         # --- Handle APK file upload (support multiple field names) ---
         if "apk" in request.files and request.files["apk"].filename:
@@ -171,10 +181,7 @@ def scan():
             apk_file = request.files["file"]
         else:
             # --- Fallback: check apk_url for URL scan ---
-            if request.is_json:
-                url_param = request.json.get("apk_url")
-            else:
-                url_param = request.form.get("apk_url")
+            url_param = (form.get("apk_url") or json_body.get("apk_url"))
             if url_param:
                 url_param = url_param.strip()
     except Exception:
@@ -188,15 +195,22 @@ def scan():
             return jsonify({"error": "File must be an .apk"}), 400
 
         tmp_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4()}_{filename}")
-        apk_file.save(tmp_path)
+        try:
+            apk_file.save(tmp_path)
+        except Exception:
+            log.exception("Failed to save uploaded file")
+            return jsonify({"error": "Failed to save uploaded file"}), 500
 
         log.info(f"[{ip}] Upload received: {filename} -> {tmp_path}")
 
         try:
             scan_result = scan_apk_file(tmp_path)
         finally:
-            if tmp_path and os.path.exists(tmp_path):
-                os.remove(tmp_path)
+            try:
+                if tmp_path and os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception:
+                log.warning("Failed to remove temp file: %s", tmp_path)
 
     # --- URL scan path ---
     elif url_param:
@@ -209,8 +223,11 @@ def scan():
                 log.exception("Failed to download/scan APK from URL")
                 return jsonify({"error": f"Failed to download APK: {e}"}), 400
             finally:
-                if tmp_path and os.path.exists(tmp_path):
-                    os.remove(tmp_path)
+                try:
+                    if tmp_path and os.path.exists(tmp_path):
+                        os.remove(tmp_path)
+                except Exception:
+                    log.warning("Failed to remove temp file: %s", tmp_path)
         else:
             try:
                 scan_result = scan_url(url_param)
@@ -223,6 +240,7 @@ def scan():
     # --- Handle worker errors ---
     if isinstance(scan_result, dict) and "error" in scan_result:
         log.error(f"[{ip}] Worker error: {scan_result['error']}")
+        # Make sure error payloads are JSON (front-end expects JSON)
         return jsonify(scan_result), 500
 
     # --- Generate summary ---
@@ -251,10 +269,10 @@ def scan():
         "email_status": email_status
     })
 
-
 @app.route("/subscribe", methods=["POST"])
 def subscribe():
-    email = request.form.get("email") or (request.json.get("email") if request.is_json else None)
+    json_body = request.get_json(silent=True) or {}
+    email = request.form.get("email") or json_body.get("email")
     if not email:
         return jsonify({"error": "Email is required"}), 400
     try:
@@ -262,7 +280,8 @@ def subscribe():
         with open(SUBSCRIBERS_FILE, "a") as f:
             f.write(email.strip() + "\n")
         log.info(f"New subscriber: {email}")
-        return jsonify({"message": "Subscribed successfully!"})
+        # Front-end expects `ok`
+        return jsonify({"ok": True, "message": "Subscribed successfully!"})
     except Exception:
         log.exception("Failed to save subscriber email")
         return jsonify({"error": "Failed to save subscription"}), 500
@@ -298,7 +317,19 @@ def sitemap():
 def ping():
     return {"status": "ok"}
 
-# Error handling
+# ------------------------------------------------------------------------------
+# Error handling (return JSON so front-end doesn't crash on res.json())
+# ------------------------------------------------------------------------------
+@app.errorhandler(RequestEntityTooLarge)
+def handle_413(e):
+    # Happens when file exceeds MAX_CONTENT_LENGTH; default is HTML which breaks res.json()
+    return jsonify({"error": "File too large. Max size is 150MB."}), 413
+
+@app.errorhandler(BadRequest)
+def handle_400(e):
+    # Covers malformed form-data/JSON
+    return jsonify({"error": "Bad Request"}), 400
+
 @app.errorhandler(500)
 def handle_500(e):
     log.exception("Internal server error")
@@ -308,4 +339,3 @@ def handle_500(e):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
