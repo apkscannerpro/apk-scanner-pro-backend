@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge, BadRequest
 from flask_cors import CORS
 
-# Workers (make sure scan_worker has scan_apk and scan_url)
+# Workers (relative imports for package safety)
 from .scan_worker import scan_apk as scan_apk_file, scan_url
 from .report_generator import generate_report, send_report_via_email
 
@@ -339,3 +339,4 @@ def handle_500(e):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
