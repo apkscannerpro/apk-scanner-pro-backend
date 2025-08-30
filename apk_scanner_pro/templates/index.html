@@ -54,9 +54,10 @@
 <body>
   <!-- HERO -->
   <header>
-    <img src="{{ url_for('static', filename='logo.png') }}" 
-     alt="APK Scanner Pro Logo" 
-     style="width: 180px; height: auto;">
+    <div style="text-align: center; margin-bottom: 20px;">
+  <img src="{{ url_for('static', filename='logo.png') }}" 
+       alt="APK Scanner Pro Logo" 
+       style="max-width: 280px; height: auto; display: block; margin: 0 auto;">
     <h1>APK Scanner Pro</h1>
     <p>Free & AI-powered APK malware scanner. Instantly detect spyware, trojans & viruses inside Android APK files using <strong>AI + VirusTotal + Bitdefender</strong>. Stay protected before you install.</p>
     <button class="btn" onclick="document.getElementById('uploadSection').scrollIntoView({behavior:'smooth'})">🚀 Start Free Scan</button>
@@ -210,4 +211,5 @@
 
 </body>
 </html>
+
 
