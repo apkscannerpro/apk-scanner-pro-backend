@@ -8,6 +8,12 @@ from email.mime.application import MIMEApplication
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from io import BytesIO
+from flask import Flask, request, jsonify
+from werkzeug.utils import secure_filename
+import tempfile
+
+# Import scan functions
+import scan_worker
 
 # Load API key for OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -15,12 +21,8 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 # === Affiliate placeholder (update later with real link) ===
 BITDEFENDER_AFFILIATE_LINK = "https://your-affiliate-link.com"  # 🔑 replace later
 
-
 # === Generate full human-readable report with OpenAI ===
 def generate_report(scan_result: dict) -> str:
-    """
-    Convert VirusTotal scan results into a human-readable security report.
-    """
     threat_data = str(scan_result)
     prompt = f"""
     You are a cybersecurity assistant for APK Scanner Pro. 
@@ -36,7 +38,6 @@ def generate_report(scan_result: dict) -> str:
     VirusTotal raw data:
     {threat_data}
     """
-
     try:
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
@@ -48,12 +49,8 @@ def generate_report(scan_result: dict) -> str:
         print(f"❌ OpenAI report generation failed: {e}")
         return "Report generation failed. Raw scan data:\n" + threat_data
 
-
 # === Generate short AI summary ===
 def generate_summary(scan_result: dict) -> str:
-    """
-    Generate a concise 3-4 line summary verdict of the scan.
-    """
     threat_data = str(scan_result)
     prompt = f"""
     You are a cybersecurity assistant for APK Scanner Pro.
@@ -65,7 +62,6 @@ def generate_summary(scan_result: dict) -> str:
     Raw data:
     {threat_data}
     """
-
     try:
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
@@ -77,12 +73,8 @@ def generate_summary(scan_result: dict) -> str:
         print(f"❌ OpenAI summary generation failed: {e}")
         return "Summary unavailable."
 
-
 # === Generate PDF report ===
 def generate_pdf_report(summary: str, report_text: str) -> BytesIO:
-    """
-    Create a PDF report with summary + detailed findings + affiliate promo.
-    """
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=letter)
     pdf.setFont("Helvetica", 11)
@@ -92,14 +84,13 @@ def generate_pdf_report(summary: str, report_text: str) -> BytesIO:
     pdf.drawString(50, y, "📄 APK Scanner Pro - Security Report")
     y -= 25
 
-    # Summary first
+    # Summary
     pdf.setFont("Helvetica-Bold", 11)
     pdf.drawString(50, y, "Summary:")
     y -= 15
     pdf.setFont("Helvetica", 11)
     for line in summary.split("\n"):
-        wrapped_lines = textwrap.wrap(line, width=90)
-        for wrap_line in wrapped_lines:
+        for wrap_line in textwrap.wrap(line, width=90):
             if y < 50:
                 pdf.showPage()
                 pdf.setFont("Helvetica", 11)
@@ -114,8 +105,7 @@ def generate_pdf_report(summary: str, report_text: str) -> BytesIO:
     y -= 15
     pdf.setFont("Helvetica", 11)
     for line in report_text.split("\n"):
-        wrapped_lines = textwrap.wrap(line, width=90)
-        for wrap_line in wrapped_lines:
+        for wrap_line in textwrap.wrap(line, width=90):
             if y < 50:
                 pdf.showPage()
                 pdf.setFont("Helvetica", 11)
@@ -123,7 +113,7 @@ def generate_pdf_report(summary: str, report_text: str) -> BytesIO:
             pdf.drawString(50, y, wrap_line)
             y -= 15
 
-    # Affiliate promo footer
+    # Affiliate footer
     y -= 30
     pdf.setFont("Helvetica-Bold", 11)
     pdf.drawString(50, y, "Protect Your Device:")
@@ -135,12 +125,8 @@ def generate_pdf_report(summary: str, report_text: str) -> BytesIO:
     buffer.seek(0)
     return buffer
 
-
 # === Send report via email with PDF ===
 def send_report_via_email(to_email: str, scan_result: dict, subject="Your APK Scan Report - APK Scanner Pro") -> bool:
-    """
-    Sends the scan report as both plain text and PDF to the user via email.
-    """
     summary = generate_summary(scan_result)
     report_text = generate_report(scan_result)
     pdf_buffer = generate_pdf_report(summary, report_text)
@@ -155,7 +141,6 @@ def send_report_via_email(to_email: str, scan_result: dict, subject="Your APK Sc
     msg["To"] = to_email
     msg["Subject"] = subject
 
-    # Plain text email body: summary + full report + affiliate link
     email_body = f"""
     ✅ APK Scanner Pro - Security Report
 
@@ -173,7 +158,6 @@ def send_report_via_email(to_email: str, scan_result: dict, subject="Your APK Sc
 
     msg.attach(MIMEText(email_body, "plain"))
 
-    # Attach PDF
     pdf_attachment = MIMEApplication(pdf_buffer.read(), _subtype="pdf")
     pdf_attachment.add_header("Content-Disposition", "attachment", filename="APK_Scan_Report.pdf")
     msg.attach(pdf_attachment)
@@ -188,3 +172,42 @@ def send_report_via_email(to_email: str, scan_result: dict, subject="Your APK Sc
     except Exception as e:
         print(f"❌ Failed to send report to {to_email}: {e}")
         return False
+
+# === Flask App ===
+app = Flask(__name__)
+
+@app.route("/scan", methods=["POST"])
+def scan():
+    try:
+        email = request.form.get("email")
+        apk_url = request.form.get("apk_url")
+        file = request.files.get("apk")
+
+        if not email:
+            return jsonify({"error": "Email is required"}), 400
+
+        # Handle file upload
+        if file:
+            filename = secure_filename(file.filename)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".apk") as tmp:
+                file.save(tmp.name)
+                result = scan_worker.scan_apk(tmp.name)
+            os.unlink(tmp.name)
+
+        # Handle URL scan
+        elif apk_url:
+            result = scan_worker.scan_url(apk_url)
+
+        else:
+            return jsonify({"error": "No APK file or URL provided"}), 400
+
+        # Send email report
+        send_report_via_email(email, result)
+
+        return jsonify({"status": "success", "result": result})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
