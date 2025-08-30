@@ -103,25 +103,38 @@ def inject_current_year():
     return {"current_year": datetime.utcnow().year}
 
 # ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Routes: Pages
 # ------------------------------------------------------------------------------
 @app.route("/")
-def home(): return render_template("index.html")
+def home():
+    return render_template("index.html")
+
+# ✅ Added alias for /home → same as /
+@app.route("/home")
+def home_alias():
+    return render_template("index.html")
 
 @app.route("/privacy")
-def privacy(): return render_template("privacy.html")
+def privacy():
+    return render_template("privacy.html")
 
 @app.route("/terms")
-def terms(): return render_template("terms.html")
+def terms():
+    return render_template("terms.html")
 
 @app.route("/pricing")
-def pricing(): return render_template("pricing.html")
+def pricing():
+    return render_template("pricing.html")
 
 @app.route("/refund-policy")
-def refund_policy(): return render_template("refund-policy.html")
+def refund_policy():
+    return render_template("refund-policy.html")
 
 @app.route("/thank-you")
-def thank_you(): return render_template("thank-you.html")
+def thank_you():
+    return render_template("thank-you.html")
+
 
 # ------------------------------------------------------------------------------
 # Routes: API
@@ -229,3 +242,4 @@ def handle_500(e): return jsonify({"error": "Internal Server Error"}), 500
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
