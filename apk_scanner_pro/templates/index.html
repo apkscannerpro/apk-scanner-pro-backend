@@ -4,14 +4,14 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   
-  <title>APK Scanner Pro – Free APK Malware Scanner with AI</title>
-  <meta name="description" content="Scan APK files instantly with APK Scanner Pro. Free 200 scans/day. Extra scans just $1 via Paddle. AI + VirusTotal + Bitdefender powered. Get instant malware reports."/>
-  <meta name="keywords" content="APK Scanner, free apk scanner, scan apk file, android malware check, virus scan apk, apk scanner pro, online apk malware scanner, ai apk scan"/>
+  <title>APK Scanner Pro – Free APK Malware Scanner | Online Android Virus Check</title>
+  <meta name="description" content="APK Scanner Pro lets you scan APK files online for malware, trojans, spyware, and viruses. Get 200 free scans daily. AI-powered with VirusTotal & Bitdefender. Secure your Android apps before installing."/>
+  <meta name="keywords" content="APK Scanner, free apk malware scanner, scan apk online, android virus check, apk virus scanner, scan play store apk, apk scanner pro, online apk scan, android security, AI malware detection"/>
   <meta name="robots" content="index, follow"/>
 
   <!-- Open Graph -->
-  <meta property="og:title" content="APK Scanner Pro – Free APK Malware Scanner with AI"/>
-  <meta property="og:description" content="Free 200 APK scans/day. Extra scans $1. Instantly detect malware, spyware & trojans using AI + VirusTotal + Bitdefender."/>
+  <meta property="og:title" content="APK Scanner Pro – Free Online APK Malware Scanner"/>
+  <meta property="og:description" content="Scan APK files instantly for malware. 200 free scans/day. Extra scans $1. AI-powered + VirusTotal + Bitdefender. Protect your Android apps before you install."/>
   <meta property="og:image" content="{{ url_for('static', filename='logo.png') }}"/>
   <meta property="og:url" content="https://apkscannerpro.com"/>
   <meta property="og:type" content="website"/>
@@ -19,7 +19,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image"/>
   <meta name="twitter:title" content="APK Scanner Pro – Free APK Malware Scanner"/>
-  <meta name="twitter:description" content="200 free APK scans/day. After that, only $1 per scan. Fast, secure, AI-powered malware detection."/>
+  <meta name="twitter:description" content="Scan APK files for free with AI + VirusTotal + Bitdefender. Detect spyware, trojans & malware. 200 free scans/day."/>
   <meta name="twitter:image" content="{{ url_for('static', filename='logo.png') }}"/>
 
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}"/>
@@ -30,7 +30,7 @@
     header { background:linear-gradient(90deg,#00c6ff,#0072ff); padding:2rem 1rem; text-align:center; }
     header img { max-height:90px; margin-bottom:0.5rem; }
     header h1 { font-size:2.6rem; margin:0.5rem 0; font-weight:700; }
-    header p { font-size:1.2rem; max-width:800px; margin:0 auto; }
+    header p { font-size:1.2rem; max-width:850px; margin:0 auto; }
     .btn { background:#ff4757; color:#fff; padding:1rem 2rem; border:none; font-size:1.1rem; border-radius:8px; cursor:pointer; margin-top:1rem; font-weight:600; transition:0.3s; }
     .btn:hover { background:#ff6b81; }
     .container { max-width:950px; margin:2rem auto; padding:0 1rem; text-align:center; }
@@ -46,7 +46,6 @@
     footer a { color:#00c6ff; margin:0 0.5rem; }
     .faq { text-align:left; background:#111; padding:1.5rem; border-radius:10px; margin:2rem auto; }
     .faq h3 { color:#00c6ff; margin:0.8rem 0; }
-    .social-links a { margin:0 0.8rem; font-size:1.1rem; color:#00c6ff; }
     #paymentPopup { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); justify-content:center; align-items:center; z-index:999; }
     .popup-content { background:#1a1a1a; padding:2rem; border-radius:10px; text-align:center; max-width:400px; }
   </style>
@@ -54,29 +53,28 @@
 <body>
   <!-- HERO -->
   <header>
-    <div style="text-align: center; margin-bottom: 20px;">
-      <img src="{{ url_for('static', filename='logo.png') }}" alt="APK Scanner Pro Logo" style="max-width: 280px; height: auto; display: block; margin: 0 auto;">
-      <h1>APK Scanner Pro</h1>
-      <p>Free & AI-powered APK malware scanner. Instantly detect spyware, trojans & viruses inside Android APK files using <strong>AI + VirusTotal + Bitdefender</strong>. Stay protected before you install.</p>
-      <button class="btn" onclick="document.getElementById('uploadSection').scrollIntoView({behavior:'smooth'})">🚀 Start Free Scan</button>
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="APK Scanner Pro Logo" style="max-width: 280px; height: auto; display: block; margin: 0 auto;">
+    <h1>APK Scanner Pro</h1>
+    <p>Free & AI-powered <strong>APK malware scanner</strong> for Android. Instantly detect spyware, trojans, adware, and viruses inside APK files. Powered by <strong>AI + VirusTotal + Bitdefender</strong> to give you maximum protection before installation.</p>
+    <button class="btn" onclick="document.getElementById('uploadSection').scrollIntoView({behavior:'smooth'})">🚀 Start Free Scan</button>
   </header>
 
   <div class="container">
     <!-- FEATURES -->
     <section>
-      <h2>✅ Why Choose APK Scanner?</h2>
+      <h2>✅ Why Choose APK Scanner Pro?</h2>
       <ul>
-        <li>⚡ Instant APK malware scan results</li>
-        <li>🎁 200 free scans daily per device/IP</li>
-        <li>📧 Instant malware report delivered via email</li>
-        <li>🛡️ Privacy-first: No file storage, scans run in-memory</li>
+        <li>⚡ <strong>Instant APK malware scan</strong> results in seconds</li>
+        <li>🎁 <strong>200 free APK scans daily</strong> per device/IP</li>
+        <li>📧 Detailed <strong>malware report delivered via email</strong></li>
+        <li>🛡️ Privacy-first: No file storage, in-memory scanning only</li>
         <li>💳 After free limit → Only <strong>$1 per scan</strong> via Paddle checkout</li>
       </ul>
     </section>
 
     <!-- SCAN UPLOAD -->
     <section id="uploadSection">
-      <h2>🔍 Scan Your APK</h2>
+      <h2>🔍 Scan Your APK Online</h2>
       <p id="quota">Loading scan quota...</p>
       <form id="scanForm">
         <input type="file" id="apkInput" name="apk" accept=".apk" class="input"><br>
@@ -88,33 +86,60 @@
       <div id="report"></div>
     </section>
 
-    <div class="security-note" style="margin-top: 30px; padding: 20px; border-radius: 12px; background: #f9f9f9; border: 1px solid #ddd; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-      <h3 style="font-size: 20px; font-weight: bold; color: #222; margin-bottom: 10px;">🔒 Protect Your Device. Protect Your Data.</h3>
-      <p style="font-size: 16px; color: #444; max-width: 700px; margin: 0 auto;">
-        Every day, thousands of Android users unknowingly install malicious APKs that steal personal data, 
-        track activity, and cause financial loss. Don’t be the next victim — scan every APK before installation.
+    <!-- SECURITY NOTE -->
+    <div style="margin-top: 30px; padding: 20px; border-radius: 12px; background: #f9f9f9; border: 1px solid #ddd; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); color:#222;">
+      <h3 style="font-size:20px; font-weight:bold; margin-bottom:10px;">🔒 Protect Your Device. Protect Your Data.</h3>
+      <p style="font-size:16px; color:#444; max-width:700px; margin:0 auto;">
+        Thousands of Android users unknowingly install malicious APKs that steal personal data, track activity, and cause financial loss. Don’t be the next victim — use <strong>APK Scanner Pro</strong> to scan every APK before installation.
       </p>
     </div>
 
-    <!-- SEO Schema Markup -->
+    <!-- FAQ (SEO JSON-LD) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebPage",
-      "name": "APK Scanner Pro - Protect Your Device",
-      "description": "Free & AI-powered APK malware scanner. Instantly detect spyware, trojans & viruses before installing Android apps.",
-      "mainEntity": {
-        "@type": "WebPageElement",
-        "name": "Protect Your Device. Protect Your Data.",
-        "description": "Every day, thousands of Android users unknowingly install malicious APKs that steal data, track activity, and cause financial loss. Don’t be the next victim — scan every APK before installation."
-      }
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How many free scans do I get daily?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "You get 200 free APK scans per device/IP every 24 hours."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What if I run out of free scans?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Extra scans are only $1 each via secure Paddle checkout."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I scan Play Store links instead of files?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, paste any Google Play link or APK download URL and APK Scanner Pro will fetch and scan it automatically."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is APK Scanner Pro safe?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. APK Scanner Pro uses trusted engines (VirusTotal + Bitdefender) combined with AI. All files are scanned in-memory and never stored."
+          }
+        }
+      ]
     }
     </script>
 
     <!-- NEWSLETTER -->
     <section>
       <h2>📩 Stay Updated</h2>
-      <p>Get malware alerts, security news & exclusive tips.</p>
+      <p>Get APK malware alerts, Android security news & exclusive tips.</p>
       <form id="newsletterForm">
         <input type="text" name="name" placeholder="Your Name" class="input" required>
         <input type="email" name="email" placeholder="Your Email" class="input" required>
@@ -129,16 +154,16 @@
 
     <!-- Affiliate -->
     <section class="affiliate">
-      [ Bitdefender Affiliate Placeholder ]
+      [ Norton / Bitdefender Affiliate Placeholder ]
     </section>
 
-    <!-- FAQ -->
+    <!-- FAQ VISIBLE -->
     <section class="faq">
       <h2>❓ Frequently Asked Questions</h2>
       <h3>How many free scans do I get daily?</h3>
       <p>You get <strong>200 free APK scans</strong> per device/IP every 24 hours.</p>
       <h3>What if I run out of free scans?</h3>
-      <p>Extra scans are just <strong>$1 each</strong> via secure Paddle checkout.</p>
+      <p>Extra scans are just <strong>$1 each</strong> via Paddle checkout.</p>
       <h3>Can I scan Play Store links instead of files?</h3>
       <p>Yes! Paste any Google Play link or APK download URL — we’ll fetch and scan it for you.</p>
       <h3>Is APK Scanner Pro safe?</h3>
@@ -158,7 +183,7 @@
 
   <!-- FOOTER -->
   <footer>
-    <div class="flex justify-center space-x-4 mt-4">
+    <div style="margin-bottom:1rem;">
       <a href="https://www.tiktok.com/@apkscanner" target="_blank"><img src="https://cdn-icons-png.flaticon.com/512/3046/3046120.png" alt="TikTok" style="width:22px;height:22px;"></a>
       <a href="https://www.instagram.com/apkscannerpro/" target="_blank"><img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram" style="width:22px;height:22px;"></a>
     </div>
@@ -189,7 +214,6 @@
   }
   updateQuota();
 
-  // Polling helper
   async function pollResult(jobId, reportBox, btn) {
     try {
       const res = await fetch(`/scan-result/${jobId}`);
