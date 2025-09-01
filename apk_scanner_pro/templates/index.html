@@ -103,34 +103,22 @@
         {
           "@type": "Question",
           "name": "How many free scans do I get daily?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "You get 200 free APK scans per device/IP every 24 hours."
-          }
+          "acceptedAnswer": { "@type": "Answer", "text": "You get 200 free APK scans per device/IP every 24 hours." }
         },
         {
           "@type": "Question",
           "name": "What if I run out of free scans?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Extra scans are only $1 each via secure Paddle checkout."
-          }
+          "acceptedAnswer": { "@type": "Answer", "text": "Extra scans are only $1 each via secure Paddle checkout." }
         },
         {
           "@type": "Question",
           "name": "Can I scan Play Store links instead of files?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes, paste any Google Play link or APK download URL and APK Scanner Pro will fetch and scan it automatically."
-          }
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes, paste any Google Play link or APK download URL and APK Scanner Pro will fetch and scan it automatically." }
         },
         {
           "@type": "Question",
           "name": "Is APK Scanner Pro safe?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. APK Scanner Pro uses trusted engines (VirusTotal + Bitdefender) combined with AI. All files are scanned in-memory and never stored."
-          }
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. APK Scanner Pro uses trusted engines (VirusTotal + Bitdefender) combined with AI. All files are scanned in-memory and never stored." }
         }
       ]
     }
@@ -177,7 +165,7 @@
       <h2>⚠️ Free Scan Limit Reached</h2>
       <p>You’ve used your 200 free scans for today.</p>
       <p><strong>Extra scans → $1 each</strong></p>
-      <a href="[PADDLE_CHECKOUT_LINK]" class="btn" target="_blank">Unlock via Paddle</a>
+      <a id="paddleLink" href="#" class="btn" target="_blank">Unlock via Paddle</a>
     </div>
   </div>
 
@@ -213,6 +201,14 @@
     }
   }
   updateQuota();
+
+  function showPopup() {
+    fetch('/scan-stats').then(r=>r.json()).then(data=>{
+      const email=document.getElementById('emailInput').value||'guest@example.com';
+      document.getElementById('paddleLink').href = `/scan?email=${encodeURIComponent(email)}`; // or Paddle checkout link generated server-side
+      document.getElementById('paymentPopup').style.display='flex';
+    });
+  }
 
   async function pollResult(jobId, reportBox, btn) {
     try {
@@ -259,7 +255,10 @@
     try {
       const res=await fetch('/scan-async',{method:'POST',body:fd});
       const json=await res.json();
-      if(res.status===403 && json.payment_required){ showPopup(); }
+      if(res.status===403 && json.payment_required){ 
+        document.getElementById('paddleLink').href=json.paddle_checkout_link;
+        showPopup(); 
+      }
       else if(json.job_id){ 
         reportBox.style.color="#0af"; 
         reportBox.textContent="⏳ Scan started... Please wait.";
@@ -283,8 +282,6 @@
     const json=await res.json();
     alert(json.ok?'Subscribed!':(json.error||'Subscribe failed'));
   });
-
-  function showPopup(){ document.getElementById('paymentPopup').style.display='flex'; }
   </script>
 
 </body>
