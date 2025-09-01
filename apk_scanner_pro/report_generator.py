@@ -15,29 +15,29 @@ import tempfile
 # Import scan functions
 from . import scan_worker
 
-# Load API key for OpenAI
+# Load OpenAI key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# === Affiliate placeholder (update later with real link) ===
-BITDEFENDER_AFFILIATE_LINK = "https://your-affiliate-link.com"  # 🔑 replace later
+# === Bitdefender affiliate link ===
+BITDEFENDER_AFFILIATE_LINK = scan_worker.BITDEFENDER_AFFILIATE_LINK  # use same link as worker
 
-# === Generate full human-readable report with OpenAI ===
+# === Generate full human-readable report ===
 def generate_report(scan_result: dict) -> str:
     threat_data = str(scan_result)
     prompt = f"""
-    You are a cybersecurity assistant for APK Scanner Pro. 
-    Convert this VirusTotal scan result into a clear, professional, 
-    human-readable malware risk report.
+You are a cybersecurity assistant for APK Scanner Pro. 
+Convert this VirusTotal + AI scan result into a clear, professional, 
+human-readable malware risk report.
 
-    Focus on:
-    - Risks & Detections
-    - Security Impact
-    - Recommendations
-    - Final Verdict
+Focus on:
+- Risks & Detections
+- Security Impact
+- Recommendations
+- Final Verdict
 
-    VirusTotal raw data:
-    {threat_data}
-    """
+Scan data:
+{threat_data}
+"""
     try:
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
@@ -53,15 +53,15 @@ def generate_report(scan_result: dict) -> str:
 def generate_summary(scan_result: dict) -> str:
     threat_data = str(scan_result)
     prompt = f"""
-    You are a cybersecurity assistant for APK Scanner Pro.
-    Summarize the scan result in 3-4 lines:
-    - Is the APK safe or malicious?
-    - What is the risk level (Low/Medium/High)?
-    - One clear recommendation.
+You are a cybersecurity assistant for APK Scanner Pro.
+Summarize the scan result in 3-4 lines:
+- Is the APK safe or malicious?
+- Risk level (Low/Medium/High)
+- One clear recommendation
 
-    Raw data:
-    {threat_data}
-    """
+Scan data:
+{threat_data}
+"""
     try:
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
@@ -142,19 +142,19 @@ def send_report_via_email(to_email: str, scan_result: dict, subject="Your APK Sc
     msg["Subject"] = subject
 
     email_body = f"""
-    ✅ APK Scanner Pro - Security Report
+✅ APK Scanner Pro - Security Report
 
-    Summary:
-    {summary}
+Summary:
+{summary}
 
-    -------------------
-    Full Report:
-    {report_text}
+-------------------
+Full Report:
+{report_text}
 
-    -------------------
-    🔒 Protect your device with Bitdefender:
-    {BITDEFENDER_AFFILIATE_LINK}
-    """
+-------------------
+🔒 Protect your device with Bitdefender:
+{BITDEFENDER_AFFILIATE_LINK}
+"""
 
     msg.attach(MIMEText(email_body, "plain"))
 
@@ -173,7 +173,7 @@ def send_report_via_email(to_email: str, scan_result: dict, subject="Your APK Sc
         print(f"❌ Failed to send report to {to_email}: {e}")
         return False
 
-# === Flask App ===
+# === Flask App Endpoint for testing ===
 app = Flask(__name__)
 
 @app.route("/scan", methods=["POST"])
@@ -211,4 +211,3 @@ def scan():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
