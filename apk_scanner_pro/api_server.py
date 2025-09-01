@@ -10,6 +10,7 @@ from werkzeug.exceptions import RequestEntityTooLarge, BadRequest
 from flask_cors import CORS
 from concurrent.futures import ThreadPoolExecutor
 import threading
+import hashlib
 
 # Workers (relative imports for package safety)
 from .scan_worker import scan_apk as scan_apk_file, scan_url
@@ -81,6 +82,17 @@ def increment_scans():
 init_db()
 
 # ------------------------------------------------------------------------------
+# Paddle payment setup
+# ------------------------------------------------------------------------------
+FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
+PAID_AMOUNT = 1.00  # USD per extra scan
+PADDLE_PRODUCT_ID = os.getenv("PADDLE_PRODUCT_ID", "YOUR_PRODUCT_ID")  # Replace
+PADDLE_VENDOR_ID = os.getenv("PADDLE_VENDOR_ID", "YOUR_VENDOR_ID")  # Replace
+
+def get_paddle_checkout_link(user_email, scan_count=1):
+    return f"https://checkout.paddle.com/checkout/product/{PADDLE_PRODUCT_ID}?quantity={scan_count}&email={user_email or 'guest@example.com'}"
+
+# ------------------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------------------
 def is_direct_apk_url(url: str) -> bool:
@@ -141,7 +153,7 @@ def _finalize_scan(scan_result, user_email):
     return {
         "report": report_text,
         "scan_count_today": used,
-        "free_scans_remaining": max(0, int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200")) - used),
+        "free_scans_remaining": max(0, FREE_LIMIT - used),
         "email_status": email_status
     }
 
@@ -164,6 +176,21 @@ def _scan_job_url(user_email=None, url_param=None):
     else:
         scan_result = scan_url(url_param)
     return _finalize_scan(scan_result, user_email)
+
+# Fetch existing VT report by hash (for 409 duplicate)
+def _fetch_existing_file_report(file_hash):
+    from scan_worker import VT_HEADERS
+    url = f"https://www.virustotal.com/api/v3/files/{file_hash}"
+    resp = requests.get(url, headers=VT_HEADERS)
+    if resp.status_code == 200:
+        data = resp.json()
+        stats = data.get("data", {}).get("attributes", {}).get("last_analysis_stats", {})
+        return {
+            "verdict": "Safe" if stats.get("malicious", 0) == 0 else "Malicious",
+            "virustotal": stats
+        }
+    else:
+        return {"error": f"VT fetch failed: {resp.status_code}", "raw": resp.text}
 
 # ------------------------------------------------------------------------------
 # Context Processor
@@ -210,7 +237,6 @@ def thank_you():
 def scan_stats():
     reset_if_new_day()
     used = get_used_scans()
-    FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
     return jsonify({
         "free_scans_remaining": max(0, FREE_LIMIT - used),
         "scan_count_today": used,
@@ -222,10 +248,6 @@ def scan_stats():
 def scan():
     reset_if_new_day()
     used = get_used_scans()
-    FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
-
-    if used >= FREE_LIMIT:
-        return jsonify({"error": "Daily free scan limit reached. Payment required.", "payment_required": True}), 403
 
     user_email, apk_file, tmp_path, url_param = None, None, None, None
     json_body = request.get_json(silent=True) or {}
@@ -238,6 +260,14 @@ def scan():
         apk_file = request.files["file"]
     else:
         url_param = (form.get("apk_url") or json_body.get("apk_url") or "").strip()
+
+    # Payment check
+    if used >= FREE_LIMIT:
+        return jsonify({
+            "error": "Daily free scan limit reached. Payment required.",
+            "payment_required": True,
+            "paddle_checkout_link": get_paddle_checkout_link(user_email)
+        }), 403
 
     try:
         if apk_file:  # File upload
@@ -258,6 +288,12 @@ def scan():
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
+
+    # Auto fetch existing VT report for 409
+    if isinstance(scan_result, dict) and "error" in scan_result and "409" in scan_result.get("error", "") and apk_file:
+        with open(tmp_path, "rb") as f:
+            file_hash = hashlib.sha256(f.read()).hexdigest()
+        scan_result = _fetch_existing_file_report(file_hash)
 
     if isinstance(scan_result, dict) and "error" in scan_result:
         return jsonify(scan_result), 500
@@ -285,9 +321,6 @@ def scan():
 def scan_async():
     reset_if_new_day()
     used = get_used_scans()
-    FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
-    if used >= FREE_LIMIT:
-        return jsonify({"error": "Daily free scan limit reached. Payment required.", "payment_required": True}), 403
 
     json_body = request.get_json(silent=True) or {}
     form = request.form
@@ -299,6 +332,14 @@ def scan_async():
         apk_file = request.files["apk"]
     elif "file" in request.files and request.files["file"].filename:
         apk_file = request.files["file"]
+
+    # Payment check
+    if used >= FREE_LIMIT:
+        return jsonify({
+            "error": "Daily free scan limit reached. Payment required.",
+            "payment_required": True,
+            "paddle_checkout_link": get_paddle_checkout_link(user_email)
+        }), 403
 
     if apk_file:
         filename = secure_filename(apk_file.filename or "")
@@ -349,4 +390,3 @@ def handle_500(e): return jsonify({"error": "Internal Server Error"}), 500
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
