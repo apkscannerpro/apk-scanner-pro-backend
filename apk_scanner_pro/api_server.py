@@ -242,6 +242,32 @@ def subscribe():
     return jsonify({"ok": True, "message": "Subscribed successfully!"})
 
 # -------------------------------------------------------------------------------
+# Static pages for /privacy, /terms, /refund-policy, /pricing, /thank-you
+# -------------------------------------------------------------------------------
+@app.route("/privacy")
+def privacy(): return render_template("privacy.html")
+
+@app.route("/terms")
+def terms(): return render_template("terms.html")
+
+@app.route("/refund-policy")
+def refund_policy(): return render_template("refund-policy.html")
+
+@app.route("/pricing")
+def pricing(): return render_template("pricing.html")
+
+@app.route("/thank-you")
+def thank_you(): return render_template("thank-you.html")
+
+# Optional catch-all for any other HTML page in /templates
+@app.route("/<page>")
+def any_page(page):
+    try:
+        return render_template(f"{page}.html")
+    except:
+        return "Page not found", 404
+
+# -------------------------------------------------------------------------------
 # Error handling
 # -------------------------------------------------------------------------------
 @app.errorhandler(RequestEntityTooLarge)
