@@ -55,12 +55,10 @@
   <!-- HERO -->
   <header>
     <div style="text-align: center; margin-bottom: 20px;">
-  <img src="{{ url_for('static', filename='logo.png') }}" 
-       alt="APK Scanner Pro Logo" 
-       style="max-width: 280px; height: auto; display: block; margin: 0 auto;">
-    <h1>APK Scanner Pro</h1>
-    <p>Free & AI-powered APK malware scanner. Instantly detect spyware, trojans & viruses inside Android APK files using <strong>AI + VirusTotal + Bitdefender</strong>. Stay protected before you install.</p>
-    <button class="btn" onclick="document.getElementById('uploadSection').scrollIntoView({behavior:'smooth'})">🚀 Start Free Scan</button>
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="APK Scanner Pro Logo" style="max-width: 280px; height: auto; display: block; margin: 0 auto;">
+      <h1>APK Scanner Pro</h1>
+      <p>Free & AI-powered APK malware scanner. Instantly detect spyware, trojans & viruses inside Android APK files using <strong>AI + VirusTotal + Bitdefender</strong>. Stay protected before you install.</p>
+      <button class="btn" onclick="document.getElementById('uploadSection').scrollIntoView({behavior:'smooth'})">🚀 Start Free Scan</button>
   </header>
 
   <div class="container">
@@ -91,28 +89,27 @@
     </section>
 
     <div class="security-note" style="margin-top: 30px; padding: 20px; border-radius: 12px; background: #f9f9f9; border: 1px solid #ddd; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-  <h3 style="font-size: 20px; font-weight: bold; color: #222; margin-bottom: 10px;">🔒 Protect Your Device. Protect Your Data.</h3>
-  <p style="font-size: 16px; color: #444; max-width: 700px; margin: 0 auto;">
-    Every day, thousands of Android users unknowingly install malicious APKs that steal personal data, 
-    track activity, and cause financial loss. Don’t be the next victim — scan every APK before installation.
-  </p>
-</div>
+      <h3 style="font-size: 20px; font-weight: bold; color: #222; margin-bottom: 10px;">🔒 Protect Your Device. Protect Your Data.</h3>
+      <p style="font-size: 16px; color: #444; max-width: 700px; margin: 0 auto;">
+        Every day, thousands of Android users unknowingly install malicious APKs that steal personal data, 
+        track activity, and cause financial loss. Don’t be the next victim — scan every APK before installation.
+      </p>
+    </div>
 
-<!-- SEO Schema Markup for Google -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebPage",
-  "name": "APK Scanner Pro - Protect Your Device",
-  "description": "Free & AI-powered APK malware scanner. Instantly detect spyware, trojans & viruses before installing Android apps.",
-  "mainEntity": {
-    "@type": "WebPageElement",
-    "name": "Protect Your Device. Protect Your Data.",
-    "description": "Every day, thousands of Android users unknowingly install malicious APKs that steal data, track activity, and cause financial loss. Don’t be the next victim — scan every APK before installation."
-  }
-}
-</script>
-
+    <!-- SEO Schema Markup -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "APK Scanner Pro - Protect Your Device",
+      "description": "Free & AI-powered APK malware scanner. Instantly detect spyware, trojans & viruses before installing Android apps.",
+      "mainEntity": {
+        "@type": "WebPageElement",
+        "name": "Protect Your Device. Protect Your Data.",
+        "description": "Every day, thousands of Android users unknowingly install malicious APKs that steal data, track activity, and cause financial loss. Don’t be the next victim — scan every APK before installation."
+      }
+    }
+    </script>
 
     <!-- NEWSLETTER -->
     <section>
@@ -162,12 +159,8 @@
   <!-- FOOTER -->
   <footer>
     <div class="flex justify-center space-x-4 mt-4">
-      <a href="https://www.tiktok.com/@apkscanner" target="_blank" class="transition-transform transform hover:scale-110 hover:opacity-80">
-        <img src="https://cdn-icons-png.flaticon.com/512/3046/3046120.png" alt="TikTok" class="inline-block" style="width:22px; height:22px;">
-      </a>
-      <a href="https://www.instagram.com/apkscannerpro/" target="_blank" class="transition-transform transform hover:scale-110 hover:opacity-80">
-        <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram" class="inline-block" style="width:22px; height:22px;">
-      </a>
+      <a href="https://www.tiktok.com/@apkscanner" target="_blank"><img src="https://cdn-icons-png.flaticon.com/512/3046/3046120.png" alt="TikTok" style="width:22px;height:22px;"></a>
+      <a href="https://www.instagram.com/apkscannerpro/" target="_blank"><img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram" style="width:22px;height:22px;"></a>
     </div>
     <p>&copy; 2025 APK Scanner Pro • 
       <a href="/pricing">Pricing</a> | 
@@ -196,6 +189,31 @@
   }
   updateQuota();
 
+  // Polling helper
+  async function pollResult(jobId, reportBox, btn) {
+    try {
+      const res = await fetch(`/scan-result/${jobId}`);
+      if (!res.ok) throw new Error("Scan result error");
+      const json = await res.json();
+      if (json.status === "pending") {
+        setTimeout(() => pollResult(jobId, reportBox, btn), 3000);
+      } else if (json.status === "done") {
+        reportBox.style.color = "#0f0";
+        reportBox.innerHTML = `<pre>${json.report}</pre>`;
+        updateQuota();
+        btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
+      } else {
+        reportBox.style.color = "#f66";
+        reportBox.textContent = json.error || "Scan failed.";
+        btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
+      }
+    } catch (err) {
+      reportBox.style.color = "#f66";
+      reportBox.textContent = "Error fetching scan results.";
+      btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
+    }
+  }
+
   document.getElementById('scanForm').addEventListener('submit', async e => {
     e.preventDefault();
     const fileInput=document.getElementById('apkInput');
@@ -208,18 +226,30 @@
     if(fileInput.files.length) fd.append('apk',fileInput.files[0]);
     if(linkInput.value) fd.append('apk_url',linkInput.value);
     fd.append('email',emailInput.value);
+
     const btn=e.target.querySelector('button');
-    btn.disabled=true; btn.textContent='Scanning...';
-    const reportBox=document.getElementById('report'); reportBox.textContent='';
+    btn.disabled=true; btn.textContent='Uploading...';
+    const reportBox=document.getElementById('report'); 
+    reportBox.style.color="#fff"; reportBox.textContent='';
+
     try {
-      const res=await fetch('/scan',{method:'POST',body:fd});
+      const res=await fetch('/scan-async',{method:'POST',body:fd});
       const json=await res.json();
       if(res.status===403 && json.payment_required){ showPopup(); }
-      else if(json.report){ reportBox.innerHTML=`<pre>${json.report}</pre>`; }
-      else { reportBox.style.color='#f66'; reportBox.textContent=json.error||'Scan failed'; }
-      updateQuota();
-    } catch { reportBox.style.color='#f66'; reportBox.textContent='Upload failed'; }
-    btn.disabled=false; btn.textContent='Upload / Submit Link & Scan';
+      else if(json.job_id){ 
+        reportBox.style.color="#0af"; 
+        reportBox.textContent="⏳ Scan started... Please wait.";
+        pollResult(json.job_id, reportBox, btn);
+      } else {
+        reportBox.style.color='#f66'; 
+        reportBox.textContent=json.error||'Scan failed';
+        btn.disabled=false; btn.textContent='Upload / Submit Link & Scan';
+      }
+    } catch { 
+      reportBox.style.color='#f66'; 
+      reportBox.textContent='Upload failed'; 
+      btn.disabled=false; btn.textContent='Upload / Submit Link & Scan';
+    }
   });
 
   document.getElementById('newsletterForm').addEventListener('submit', async e=>{
@@ -235,6 +265,3 @@
 
 </body>
 </html>
-
-
-
