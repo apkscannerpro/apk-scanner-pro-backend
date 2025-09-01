@@ -13,7 +13,7 @@ VT_HEADERS = {"x-apikey": VIRUSTOTAL_API_KEY}
 # --- Bitdefender Affiliate (no API, just link) ---
 BITDEFENDER_AFFILIATE_LINK = (
     "https://www.bitdefender.com/site/view/trial.html?affid=12345"
-)  # replace with real affiliate link
+)  # replace with your real affiliate link
 
 # --- AI Layer ---
 AI_ENABLED = True
@@ -24,7 +24,6 @@ client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 def _ai_assistant_summary(report_text: str):
     if not client:
         return {"ai_summary": "⚠️ AI not configured. Using raw VT verdicts."}
-
     try:
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
