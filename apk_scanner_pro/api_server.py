@@ -27,8 +27,8 @@ CORS(app, resources={
     r"/subscribe": {"origins": "*"}
 })
 
-# ✅ Reduce max size to 95MB (Cloudflare cap safety)
-app.config["MAX_CONTENT_LENGTH"] = 95 * 1024 * 1024
+# Increase upload limit to 500 MB
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB
 
 UPLOAD_DIR = "/tmp/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -337,7 +337,7 @@ def ping():
 # Error handling
 # ------------------------------------------------------------------------------
 @app.errorhandler(RequestEntityTooLarge)
-def handle_413(e): return jsonify({"error": "File too large. Max 95MB."}), 413
+def handle_413(e): return jsonify({"error": "File too large. Max 500MB."}), 413
 
 @app.errorhandler(BadRequest)
 def handle_400(e): return jsonify({"error": "Bad Request"}), 400
@@ -349,3 +349,4 @@ def handle_500(e): return jsonify({"error": "Internal Server Error"}), 500
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
