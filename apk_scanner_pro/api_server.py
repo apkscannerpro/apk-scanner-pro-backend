@@ -377,20 +377,20 @@ def scan_async():
 
 @app.route("/scan-result/<job_id>")
 def scan_result_poll(job_id):
-    job = jobs_get(job_id)
-    if not job:
-        return jsonify({"error": "job not found"}), 404
+job = jobs_get(job_id)
+if not job:
+return jsonify({"error": "job not found"}), 404
 
-    if job["status"] == "done":
-        result = job.get("result") or {}
-        flattened = {"status": "done"}
-        flattened.update(result)
-        return jsonify(flattened)
 
-    if job["status"] == "error":
-        return jsonify({"status": "error", "error": job.get("error", "unknown error")})
+if job["status"] == "done":
+return jsonify({"status": "done", "success": True, "email": job["email"]})
 
-    return jsonify({"status": "pending"})
+
+if job["status"] == "error":
+return jsonify({"status": "error", "error": job.get("error", "unknown error")})
+
+
+return jsonify({"status": "pending"})
 
 def save_subscriber(name: str, email: str):
     """Save subscribers to Subscribers/subscribers.json"""
@@ -451,4 +451,5 @@ def handle_500(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
