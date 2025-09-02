@@ -207,6 +207,29 @@ Support: support@apkscannerpro.com
         print("Email sending failed:", e)
         return False
 
+def _save_lead(name, email, source):
+    """Save leads to Subscribers/subscribers.json (deduped)."""
+    subs_file = os.path.join(os.path.dirname(__file__), "Subscribers", "subscribers.json")
+    os.makedirs(os.path.dirname(subs_file), exist_ok=True)
+
+    data = []
+    if os.path.exists(subs_file):
+        try:
+            with open(subs_file, "r") as f:
+                data = json.load(f)
+        except Exception:
+            data = []
+
+    if not any(sub.get("email") == email for sub in data):
+        data.append({
+            "name": name or "",
+            "email": email,
+            "source": source,
+            "date": datetime.utcnow().isoformat()
+        })
+        with open(subs_file, "w") as f:
+            json.dump(data, f, indent=2)
+
 # -------------------------------------------------------------------------------
 # Async job system
 # -------------------------------------------------------------------------------
@@ -234,6 +257,8 @@ def _finalize_scan(scan_result, user_email):
     increment_scans()
     if user_email:
         email_sent = send_report_via_email(user_email, scan_result)
+        # save lead from scan
+        _save_lead(name="", email=user_email, source="scan_report")
         return {"success": email_sent, "email": user_email}
     return {"success": False, "email": None}
 
@@ -371,22 +396,7 @@ def subscribe():
     if not email:
         return jsonify({"error": "Email is required"}), 400
 
-    subs_file = os.path.join(os.path.dirname(__file__), "Subscribers", "subscribers.json")
-    os.makedirs(os.path.dirname(subs_file), exist_ok=True)
-
-    data = []
-    if os.path.exists(subs_file):
-        try:
-            with open(subs_file, "r") as f:
-                data = json.load(f)
-        except Exception:
-            data = []
-
-    if not any(sub.get("email") == email for sub in data):
-        data.append({"name": name, "email": email})
-        with open(subs_file, "w") as f:
-            json.dump(data, f, indent=2)
-
+    _save_lead(name=name, email=email, source="newsletter")
     return jsonify({"ok": True, "message": "Subscribed successfully!"})
 
 @app.route("/ping")
