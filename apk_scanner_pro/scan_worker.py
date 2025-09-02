@@ -13,7 +13,7 @@ VT_HEADERS = {"x-apikey": VIRUSTOTAL_API_KEY}
 # --- Bitdefender Affiliate (no API, just link) ---
 BITDEFENDER_AFFILIATE_LINK = (
     "https://www.bitdefender.com/site/view/trial.html?affid=12345"
-)  # replace with your real affiliate link
+)  # replace with your affiliate link
 
 # --- AI Layer ---
 AI_ENABLED = True
@@ -24,7 +24,7 @@ client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 def _ai_assistant_summary(report_text: str):
     """Generate AI-powered summary of risks."""
     if not client:
-        return {"ai_summary": "⚠️ AI not configured. Defaulting to VirusTotal verdicts."}
+        return {"Risk Assessment": "⚠️ AI not configured. Defaulting to VirusTotal verdicts."}
     try:
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -42,20 +42,22 @@ Report:
             ],
             max_tokens=150,
         )
-        return {"ai_summary": resp.choices[0].message.content.strip()}
+        return {"Risk Assessment": resp.choices[0].message.content.strip()}
     except Exception:
-        return {"ai_summary": "⚠️ AI summary unavailable. Defaulting to VirusTotal verdicts."}
+        return {"Risk Assessment": "⚠️ AI summary unavailable. Defaulting to VirusTotal verdicts."}
 
 
-def _normalize_results(vt_stats, ai_summary=None, note=None):
+def _normalize_results(vt_engines, vt_stats, ai_summary=None, note=None):
     """Unify scan results into branded SaaS-ready format."""
     result = {
         "status": "success",
         "powered_by": "APK Scanner Pro",
         "verdict": "Safe",
-        "virustotal": vt_stats or {},
+        "virustotal": vt_engines or {},
+        "bitdefender": {
+            "Affiliate Offer": f"Protect your device with Bitdefender 👉 {BITDEFENDER_AFFILIATE_LINK}"
+        },
         "ai": ai_summary or {},
-        "affiliate_offer": f"Protect your device with Bitdefender 👉 {BITDEFENDER_AFFILIATE_LINK}",
     }
 
     if vt_stats.get("malicious", 0) > 0:
@@ -69,6 +71,7 @@ def _normalize_results(vt_stats, ai_summary=None, note=None):
 
 
 def _poll_analysis(analysis_id):
+    """Poll VirusTotal until analysis is complete or timeout."""
     analysis_url = f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
     for _ in range(18):  # ~90s max
         resp = requests.get(analysis_url, headers=VT_HEADERS)
@@ -89,8 +92,9 @@ def _fetch_existing_file_report(file_hash):
     if resp.status_code == 200:
         data = resp.json()
         vt_stats = data.get("data", {}).get("attributes", {}).get("last_analysis_stats", {})
+        vt_engines = data.get("data", {}).get("attributes", {}).get("last_analysis_results", {})
         ai_summary = _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
-        return _normalize_results(vt_stats, ai_summary, note="Fetched from existing VT report")
+        return _normalize_results(vt_engines, vt_stats, ai_summary, note="Fetched from existing VT report")
     return {"status": "error", "message": f"Failed to fetch existing report: {resp.status_code}"}
 
 
@@ -124,8 +128,9 @@ def scan_apk(file_path):
             return vt_analysis
 
         vt_stats = vt_analysis.get("data", {}).get("attributes", {}).get("stats", {}) or {}
+        vt_engines = vt_analysis.get("data", {}).get("attributes", {}).get("results", {}) or {}
         ai_summary = _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
-        return _normalize_results(vt_stats, ai_summary)
+        return _normalize_results(vt_engines, vt_stats, ai_summary)
 
     except Exception as e:
         return {"status": "error", "message": f"Exception in scan_apk: {str(e)}"}
@@ -155,8 +160,9 @@ def scan_url(target_url):
             return vt_analysis
 
         vt_stats = vt_analysis.get("data", {}).get("attributes", {}).get("stats", {}) or {}
+        vt_engines = vt_analysis.get("data", {}).get("attributes", {}).get("results", {}) or {}
         ai_summary = _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
-        return _normalize_results(vt_stats, ai_summary)
+        return _normalize_results(vt_engines, vt_stats, ai_summary)
 
     except Exception as e:
         return {"status": "error", "message": f"Exception in scan_url: {str(e)}"}
