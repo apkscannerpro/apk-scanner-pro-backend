@@ -285,23 +285,23 @@ def home():
 
 @app.route("/privacy")
 def privacy():
-    return _render_or_static("privacy")
+    return _render_or_static("privacy.html")
 
 @app.route("/terms")
 def terms():
-    return _render_or_static("terms")
+    return _render_or_static("terms.html")
 
 @app.route("/refund-policy")
 def refund_policy():
-    return _render_or_static("refund-policy")
+    return _render_or_static("refund-policy.html")
 
 @app.route("/pricing")
 def pricing():
-    return _render_or_static("pricing")
+    return _render_or_static("pricing.html")
 
 @app.route("/thank-you")
 def thank_you():
-    return _render_or_static("thank-you")
+    return _render_or_static("thank-you.html")
 
 @app.route("/scan-stats")
 def scan_stats():
@@ -413,3 +413,4 @@ def handle_500(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
