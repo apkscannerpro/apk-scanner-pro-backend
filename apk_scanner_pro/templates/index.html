@@ -41,7 +41,9 @@
     ul li { margin:0.5rem 0; font-size:1.1rem; }
     .input { padding:0.8rem; margin:0.5rem 0; border-radius:6px; border:none; font-size:1rem; width:260px; max-width:85%; }
     #quota { margin:1rem 0; font-weight:600; font-size:1.1rem; }
-    #report { margin-top:1.5rem; color:#0f0; white-space:pre-wrap; background:#111; padding:1rem; border-radius:6px; max-height:400px; overflow:auto; text-align:left; }
+    #report { margin-top:1.5rem; white-space:pre-wrap; background:#111; padding:1rem; border-radius:6px; max-height:400px; overflow:auto; text-align:left; }
+    .success-box { display:none; background:#0f5132; color:#d1e7dd; border:1px solid #0f5132; padding:1rem; border-radius:6px; margin-top:1rem; text-align:center; }
+    .error-box { display:none; background:#842029; color:#f8d7da; border:1px solid #842029; padding:1rem; border-radius:6px; margin-top:1rem; text-align:center; }
     .adsense,.affiliate { border:2px dashed #444; padding:1.5rem; margin:2rem auto; border-radius:10px; color:#aaa; }
     footer { background:#111; padding:2rem 1rem; text-align:center; color:#ccc; font-size:0.9rem; }
     footer a { color:#00c6ff; margin:0 0.5rem; }
@@ -85,45 +87,9 @@
         <button class="btn" type="submit">Upload / Submit Link & Scan</button>
       </form>
       <div id="report"></div>
+      <div id="successBox" class="success-box"></div>
+      <div id="errorBox" class="error-box"></div>
     </section>
-
-    <!-- SECURITY NOTE -->
-    <div style="margin-top: 30px; padding: 20px; border-radius: 12px; background: #f9f9f9; border: 1px solid #ddd; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); color:#222;">
-      <h3 style="font-size:20px; font-weight:bold; margin-bottom:10px;">🔒 Protect Your Device. Protect Your Data.</h3>
-      <p style="font-size:16px; color:#444; max-width:700px; margin:0 auto;">
-        Thousands of Android users unknowingly install malicious APKs that steal personal data, track activity, and cause financial loss. Don’t be the next victim — use <strong>APK Scanner Pro</strong> to scan every APK before installation.
-      </p>
-    </div>
-
-    <!-- FAQ (SEO JSON-LD) -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "How many free scans do I get daily?",
-          "acceptedAnswer": { "@type": "Answer", "text": "You get 200 free APK scans per device/IP every 24 hours." }
-        },
-        {
-          "@type": "Question",
-          "name": "What if I run out of free scans?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Extra scans are only $1 each via secure Paddle checkout." }
-        },
-        {
-          "@type": "Question",
-          "name": "Can I scan Play Store links instead of files?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Yes, paste any Google Play link or APK download URL and APK Scanner Pro will fetch and scan it automatically." }
-        },
-        {
-          "@type": "Question",
-          "name": "Is APK Scanner Pro safe?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Yes. APK Scanner Pro uses trusted engines (VirusTotal + Bitdefender) combined with AI. All files are scanned in-memory and never stored." }
-        }
-      ]
-    }
-    </script>
 
     <!-- NEWSLETTER -->
     <section>
@@ -145,44 +111,16 @@
     <section class="affiliate">
       [ Norton / Bitdefender Affiliate Placeholder ]
     </section>
-
-    <!-- FAQ VISIBLE -->
-    <section class="faq">
-      <h2>❓ Frequently Asked Questions</h2>
-      <h3>How many free scans do I get daily?</h3>
-      <p>You get <strong>200 free APK scans</strong> per device/IP every 24 hours.</p>
-      <h3>What if I run out of free scans?</h3>
-      <p>Extra scans are just <strong>$1 each</strong> via Paddle checkout.</p>
-      <h3>Can I scan Play Store links instead of files?</h3>
-      <p>Yes! Paste any Google Play link or APK download URL — we’ll fetch and scan it for you.</p>
-      <h3>Is APK Scanner Pro safe?</h3>
-      <p>Absolutely. We use trusted engines (VirusTotal + Bitdefender) combined with AI. Files are scanned in-memory and never stored.</p>
-    </section>
-  </div>
-
-  <!-- PAYMENT POPUP -->
-  <div id="paymentPopup">
-    <div class="popup-content">
-      <h2>⚠️ Free Scan Limit Reached</h2>
-      <p>You’ve used your 200 free scans for today.</p>
-      <p><strong>Extra scans → $1 each</strong></p>
-      <a id="paddleLink" href="#" class="btn" target="_blank">Unlock via Paddle</a>
-    </div>
   </div>
 
   <!-- FOOTER -->
   <footer>
-    <div style="margin-bottom:1rem;">
-      <a href="https://www.tiktok.com/@apkscanner" target="_blank"><img src="https://cdn-icons-png.flaticon.com/512/3046/3046120.png" alt="TikTok" style="width:22px;height:22px;"></a>
-      <a href="https://www.instagram.com/apkscannerpro/" target="_blank"><img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram" style="width:22px;height:22px;"></a>
-    </div>
     <p>&copy; 2025 APK Scanner Pro • 
       <a href="/pricing">Pricing</a> | 
       <a href="/privacy">Privacy</a> | 
       <a href="/terms">Terms</a> | 
       <a href="/refund-policy">Refund Policy</a> | 
-      <a href="/thank-you">Thank You</a> • 
-      <a href="mailto:support@apkscannerpro.com">Contact Support</a>
+      <a href="/thank-you">Thank You</a>
     </p>
   </footer>
 
@@ -195,7 +133,7 @@
       if (data.free_scans_remaining > 0) {
         q.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today`;
       } else {
-        q.innerHTML = `⚠️ No free scans left. <a href="#" onclick="showPopup()">Buy More</a>`;
+        q.innerHTML = `⚠️ No free scans left.`;
       }
     } catch {
       q.textContent = "⚠️ Unable to load quota.";
@@ -203,75 +141,63 @@
   }
   updateQuota();
 
-  function showPopup() {
-    fetch('/scan-stats').then(r=>r.json()).then(data=>{
-      const email=document.getElementById('emailInput').value||'guest@example.com';
-      document.getElementById('paddleLink').href = `/scan?email=${encodeURIComponent(email)}`; // or Paddle checkout link generated server-side
-      document.getElementById('paymentPopup').style.display='flex';
-    });
-  }
-
-  async function pollResult(jobId, reportBox, btn) {
+  async function pollResult(jobId, reportBox, btn, email) {
     try {
       const res = await fetch(`/scan-result/${jobId}`);
-      if (!res.ok) throw new Error("Scan result error");
       const json = await res.json();
       if (json.status === "pending") {
-        setTimeout(() => pollResult(jobId, reportBox, btn), 3000);
+        setTimeout(() => pollResult(jobId, reportBox, btn, email), 3000);
       } else if (json.status === "done") {
-        reportBox.style.color = "#0f0";
-        reportBox.innerHTML = `<pre>${json.report}</pre>`;
+        // hide raw dump
+        reportBox.style.display = "none";
+        // show branded success
+        const successBox = document.getElementById('successBox');
+        successBox.style.display = "block";
+        successBox.innerHTML = `✅ Your report has been sent to <strong>${email}</strong>.`;
         updateQuota();
         btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
       } else {
-        reportBox.style.color = "#f66";
-        reportBox.textContent = json.error || "Scan failed.";
+        const errorBox = document.getElementById('errorBox');
+        errorBox.style.display = "block";
+        errorBox.textContent = json.error || "Scan failed.";
         btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
       }
-    } catch (err) {
-      reportBox.style.color = "#f66";
-      reportBox.textContent = "Error fetching scan results.";
+    } catch {
+      const errorBox = document.getElementById('errorBox');
+      errorBox.style.display = "block";
+      errorBox.textContent = "Error fetching scan results.";
       btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
     }
   }
 
   document.getElementById('scanForm').addEventListener('submit', async e => {
     e.preventDefault();
-    const fileInput=document.getElementById('apkInput');
-    const linkInput=document.getElementById('apkLink');
-    const emailInput=document.getElementById('emailInput');
-    if ((!fileInput.files.length && !linkInput.value) || !emailInput.value) {
-      return alert('Provide an APK file OR link, and your email.');
-    }
-    const fd=new FormData();
-    if(fileInput.files.length) fd.append('apk',fileInput.files[0]);
-    if(linkInput.value) fd.append('apk_url',linkInput.value);
-    fd.append('email',emailInput.value);
-
+    const fd=new FormData(e.target);
     const btn=e.target.querySelector('button');
     btn.disabled=true; btn.textContent='Uploading...';
     const reportBox=document.getElementById('report'); 
-    reportBox.style.color="#fff"; reportBox.textContent='';
+    reportBox.style.display="block"; reportBox.style.color="#fff"; reportBox.textContent='';
+    document.getElementById('successBox').style.display="none";
+    document.getElementById('errorBox').style.display="none";
 
     try {
       const res=await fetch('/scan-async',{method:'POST',body:fd});
       const json=await res.json();
-      if(res.status===403 && json.payment_required){ 
-        document.getElementById('paddleLink').href=json.paddle_checkout_link;
-        showPopup(); 
-      }
-      else if(json.job_id){ 
+      if(json.job_id){ 
         reportBox.style.color="#0af"; 
         reportBox.textContent="⏳ Scan started... Please wait.";
-        pollResult(json.job_id, reportBox, btn);
+        const email = fd.get("email");
+        pollResult(json.job_id, reportBox, btn, email);
       } else {
-        reportBox.style.color='#f66'; 
-        reportBox.textContent=json.error||'Scan failed';
+        const errorBox = document.getElementById('errorBox');
+        errorBox.style.display = "block";
+        errorBox.textContent = json.error || 'Scan failed';
         btn.disabled=false; btn.textContent='Upload / Submit Link & Scan';
       }
     } catch { 
-      reportBox.style.color='#f66'; 
-      reportBox.textContent='Upload failed'; 
+      const errorBox = document.getElementById('errorBox');
+      errorBox.style.display = "block";
+      errorBox.textContent='Upload failed'; 
       btn.disabled=false; btn.textContent='Upload / Submit Link & Scan';
     }
   });
@@ -279,12 +205,19 @@
   document.getElementById('newsletterForm').addEventListener('submit', async e=>{
     e.preventDefault();
     const fd=new FormData(e.target);
-    const res=await fetch('/subscribe',{method:'POST',body:fd});
-    const json=await res.json();
-    alert(json.ok?'Subscribed!':(json.error||'Subscribe failed'));
+    try {
+      const res=await fetch('/subscribe',{method:'POST',body:fd});
+      const json=await res.json();
+      if(json.ok){
+        alert('🎉 Subscribed successfully!');
+        e.target.reset();
+      } else {
+        alert(json.error || 'Subscribe failed');
+      }
+    } catch {
+      alert('⚠️ Network error. Please try again.');
+    }
   });
   </script>
-
 </body>
 </html>
-
