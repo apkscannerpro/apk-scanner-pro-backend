@@ -28,6 +28,7 @@ COMPANY_URL = "https://apkscannerpro.com"
 COMPANY_SUPPORT_EMAIL = "support@apkscannerpro.com"
 COMPANY_LOGO_URL = "https://apkscannerpro.com/static/logo.png"  # replace with your hosted logo
 
+
 # === Generate full human-readable report ===
 def generate_report(scan_result: dict) -> str:
     threat_data = str(scan_result)
@@ -56,6 +57,7 @@ Scan data:
         print(f"❌ OpenAI report generation failed: {e}")
         return "Report generation failed. Raw scan data:\n" + threat_data
 
+
 # === Generate short AI summary ===
 def generate_summary(scan_result: dict) -> str:
     threat_data = str(scan_result)
@@ -80,8 +82,9 @@ Scan data:
         print(f"❌ OpenAI summary generation failed: {e}")
         return "Summary unavailable."
 
+
 # === Generate PDF report ===
-def generate_pdf_report(summary: str, report_text: str, file_name: str = "APK File") -> BytesIO:
+def generate_pdf_report(summary: str, report_text: str, file_name: str = "APK File", scan_result: dict = None) -> BytesIO:
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=letter)
     pdf.setFont("Helvetica", 11)
@@ -95,7 +98,10 @@ def generate_pdf_report(summary: str, report_text: str, file_name: str = "APK Fi
     pdf.drawString(50, y, f"Scan Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
     y -= 15
     pdf.drawString(50, y, f"File: {file_name}")
-    y -= 25
+    y -= 15
+    if scan_result and "verdict" in scan_result:
+        pdf.drawString(50, y, f"Final Verdict: {scan_result['verdict']}")
+        y -= 25
 
     # Summary
     pdf.setFont("Helvetica-Bold", 11)
@@ -142,11 +148,12 @@ def generate_pdf_report(summary: str, report_text: str, file_name: str = "APK Fi
     buffer.seek(0)
     return buffer
 
+
 # === Send report via email with PDF ===
 def send_report_via_email(to_email: str, scan_result: dict, file_name: str = "APK File") -> bool:
     summary = generate_summary(scan_result)
     report_text = generate_report(scan_result)
-    pdf_buffer = generate_pdf_report(summary, report_text, file_name)
+    pdf_buffer = generate_pdf_report(summary, report_text, file_name, scan_result)
 
     sender_email = os.getenv("EMAIL_USER")
     sender_pass = os.getenv("EMAIL_PASS")
@@ -159,6 +166,10 @@ def send_report_via_email(to_email: str, scan_result: dict, file_name: str = "AP
     msg["Subject"] = f"🔍 {COMPANY_NAME} - Security Report"
 
     # HTML email body
+    verdict = scan_result.get("verdict", "Unknown")
+    vt_stats = scan_result.get("virustotal", {})
+    ai_summary = scan_result.get("ai", {}).get("ai_summary", "")
+
     html_body = f"""
     <html>
       <body style="font-family: Arial, sans-serif; line-height:1.6; color:#333;">
@@ -169,9 +180,19 @@ def send_report_via_email(to_email: str, scan_result: dict, file_name: str = "AP
           </div>
           <p><strong>Scan Date:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
           <p><strong>File:</strong> {file_name}</p>
+          <p><strong>Final Verdict:</strong> {verdict}</p>
           <hr/>
           <h3>Summary</h3>
           <p>{summary.replace("\n", "<br/>")}</p>
+          <h3>AI Analysis</h3>
+          <p>{ai_summary}</p>
+          <h3>VirusTotal Stats</h3>
+          <ul>
+            <li>Malicious: {vt_stats.get("malicious", 0)}</li>
+            <li>Suspicious: {vt_stats.get("suspicious", 0)}</li>
+            <li>Undetected: {vt_stats.get("undetected", 0)}</li>
+            <li>Harmless: {vt_stats.get("harmless", 0)}</li>
+          </ul>
           <h3>Full Report</h3>
           <p>{report_text.replace("\n", "<br/>")}</p>
           <hr/>
@@ -204,6 +225,7 @@ def send_report_via_email(to_email: str, scan_result: dict, file_name: str = "AP
     except Exception as e:
         print(f"❌ Failed to send report to {to_email}: {e}")
         return False
+
 
 # === Flask App Endpoint for testing ===
 app = Flask(__name__)
@@ -242,6 +264,7 @@ def scan():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
