@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, jsonify, render_template
 import os
 import uuid
 import requests
@@ -22,7 +22,6 @@ from .report_generator import generate_report, generate_summary
 # -------------------------------------------------------------------------------
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
-# Allow cross-origin for the main API endpoints
 CORS(app, resources={
     r"/scan*": {"origins": "*"},
     r"/scan-result/*": {"origins": "*"},
@@ -30,9 +29,7 @@ CORS(app, resources={
     r"/subscribe": {"origins": "*"},
 })
 
-# Increase upload limit to 500 MB
 app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024
-
 UPLOAD_DIR = "/tmp/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -166,7 +163,6 @@ def download_apk_to_tmp(url: str) -> str:
     return local_path
 
 def send_report_via_email(email_to, scan_result):
-    """Send professional plain-text branded email."""
     try:
         smtp_host = os.getenv("SMTP_SERVER", "smtpout.secureserver.net")
         smtp_port = int(os.getenv("SMTP_PORT", "587"))
@@ -211,24 +207,6 @@ Support: support@apkscannerpro.com
         print("Email sending failed:", e)
         return False
 
-def save_subscriber(email: str):
-    """Save subscribers to subscribers/subscribers.json"""
-    subs_file = os.path.join(os.path.dirname(__file__), "subscribers", "subscribers.json")
-    os.makedirs(os.path.dirname(subs_file), exist_ok=True)
-
-    data = []
-    if os.path.exists(subs_file):
-        try:
-            with open(subs_file, "r") as f:
-                data = json.load(f)
-        except Exception:
-            data = []
-
-    if email not in data:
-        data.append(email)
-        with open(subs_file, "w") as f:
-            json.dump(data, f, indent=2)
-
 # -------------------------------------------------------------------------------
 # Async job system
 # -------------------------------------------------------------------------------
@@ -251,23 +229,13 @@ def _start_job(target_fn, *args, **kwargs):
 
 def _finalize_scan(scan_result, user_email):
     if isinstance(scan_result, dict) and "error" in scan_result:
-        return {"error": scan_result.get("error", "Scan failed")}
+        return {"error": scan_result.get("error", "Scan failed"), "success": False, "email": user_email}
 
     increment_scans()
-    email_status = None
     if user_email:
-        email_status = "sent" if send_report_via_email(user_email, scan_result) else "failed"
-        save_subscriber(user_email)
-
-    used = get_used_scans()
-    FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
-    return {
-        "report": generate_summary(scan_result),
-        "scan_count_today": used,
-        "free_scans_remaining": max(0, FREE_LIMIT - used),
-        "email_status": email_status,
-        "paddle_checkout_link": os.getenv("PADDLE_CHECKOUT_LINK"),
-    }
+        email_sent = send_report_via_email(user_email, scan_result)
+        return {"success": email_sent, "email": user_email}
+    return {"success": False, "email": None}
 
 def _scan_job_file(user_email=None, tmp_path=None):
     try:
@@ -377,23 +345,32 @@ def scan_async():
 
 @app.route("/scan-result/<job_id>")
 def scan_result_poll(job_id):
-job = jobs_get(job_id)
-if not job:
-return jsonify({"error": "job not found"}), 404
+    job = jobs_get(job_id)
+    if not job:
+        return jsonify({"error": "job not found"}), 404
 
+    if job["status"] == "done":
+        result = job.get("result") or {}
+        return jsonify({
+            "status": "done",
+            "success": result.get("success", False),
+            "email": result.get("email")
+        })
 
-if job["status"] == "done":
-return jsonify({"status": "done", "success": True, "email": job["email"]})
+    if job["status"] == "error":
+        return jsonify({"status": "error", "error": job.get("error", "unknown error")})
 
+    return jsonify({"status": "pending"})
 
-if job["status"] == "error":
-return jsonify({"status": "error", "error": job.get("error", "unknown error")})
+@app.route("/subscribe", methods=["POST"])
+def subscribe():
+    json_body = request.get_json(silent=True) or {}
+    name = request.form.get("name") or json_body.get("name", "").strip()
+    email = request.form.get("email") or json_body.get("email", "").strip()
 
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
 
-return jsonify({"status": "pending"})
-
-def save_subscriber(name: str, email: str):
-    """Save subscribers to Subscribers/subscribers.json"""
     subs_file = os.path.join(os.path.dirname(__file__), "Subscribers", "subscribers.json")
     os.makedirs(os.path.dirname(subs_file), exist_ok=True)
 
@@ -405,25 +382,12 @@ def save_subscriber(name: str, email: str):
         except Exception:
             data = []
 
-    # Prevent duplicate by email
     if not any(sub.get("email") == email for sub in data):
         data.append({"name": name, "email": email})
         with open(subs_file, "w") as f:
             json.dump(data, f, indent=2)
 
-
-@app.route("/subscribe", methods=["POST"])
-def subscribe():
-    json_body = request.get_json(silent=True) or {}
-    name = request.form.get("name") or json_body.get("name", "").strip()
-    email = request.form.get("email") or json_body.get("email", "").strip()
-
-    if not email:
-        return jsonify({"error": "Email is required"}), 400
-
-    save_subscriber(name, email)
     return jsonify({"ok": True, "message": "Subscribed successfully!"})
-
 
 @app.route("/ping")
 def ping():
@@ -451,5 +415,3 @@ def handle_500(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
-
-
