@@ -291,7 +291,10 @@ def _scan_job_url(user_email=None, url_param=None):
 # -------------------------------------------------------------------------------
 # Routes
 # -------------------------------------------------------------------------------
+from flask import redirect
+
 @app.route("/")
+@app.route("/home")
 def home():
     return render_template("index.html")
 
@@ -423,5 +426,13 @@ def handle_500(e):
     return jsonify({"error": "Internal Server Error"}), 500
 
 # -------------------------------------------------------------------------------
+# Fallback route: redirect unknown paths to home
+# -------------------------------------------------------------------------------
+@app.errorhandler(404)
+def page_not_found(e):
+    return redirect("/home")
+
+# -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
