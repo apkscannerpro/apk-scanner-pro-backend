@@ -392,14 +392,38 @@ def scan_result_poll(job_id):
 
     return jsonify({"status": "pending"})
 
+def save_subscriber(name: str, email: str):
+    """Save subscribers to Subscribers/subscribers.json"""
+    subs_file = os.path.join(os.path.dirname(__file__), "Subscribers", "subscribers.json")
+    os.makedirs(os.path.dirname(subs_file), exist_ok=True)
+
+    data = []
+    if os.path.exists(subs_file):
+        try:
+            with open(subs_file, "r") as f:
+                data = json.load(f)
+        except Exception:
+            data = []
+
+    # Prevent duplicate by email
+    if not any(sub.get("email") == email for sub in data):
+        data.append({"name": name, "email": email})
+        with open(subs_file, "w") as f:
+            json.dump(data, f, indent=2)
+
+
 @app.route("/subscribe", methods=["POST"])
 def subscribe():
     json_body = request.get_json(silent=True) or {}
-    email = request.form.get("email") or json_body.get("email")
+    name = request.form.get("name") or json_body.get("name", "").strip()
+    email = request.form.get("email") or json_body.get("email", "").strip()
+
     if not email:
         return jsonify({"error": "Email is required"}), 400
-    save_subscriber(email)
+
+    save_subscriber(name, email)
     return jsonify({"ok": True, "message": "Subscribed successfully!"})
+
 
 @app.route("/ping")
 def ping():
@@ -427,3 +451,4 @@ def handle_500(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
