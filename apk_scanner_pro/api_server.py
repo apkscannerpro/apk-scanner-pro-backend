@@ -353,7 +353,7 @@ def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None):  # <-
 # -------------------------------------------------------------------------------
 # Routes
 # -------------------------------------------------------------------------------
-from flask import redirect
+from flask import redirect, Response
 
 @app.route("/")
 @app.route("/home")
@@ -383,6 +383,59 @@ def refund_policy():
 @app.route("/thank-you")
 def thank_you():
     return render_template("thank-you.html")
+
+# Robots.txt (served dynamically)
+@app.route("/robots.txt")
+def robots_txt():
+    content = """User-agent: *
+Allow: /
+
+Sitemap: https://www.apkscannerpro.com/sitemap.xml
+
+# AI bots allowed for indexing and retrieval
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+"""
+    return Response(content, mimetype="text/plain")
+
+# Dynamic Sitemap.xml
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    pages = [
+        {"loc": "https://www.apkscannerpro.com/", "priority": "1.0"},
+        {"loc": "https://www.apkscannerpro.com/home", "priority": "0.9"},
+        {"loc": "https://www.apkscannerpro.com/privacy"},
+        {"loc": "https://www.apkscannerpro.com/terms"},
+        {"loc": "https://www.apkscannerpro.com/pricing"},
+        {"loc": "https://www.apkscannerpro.com/refund-policy"},
+        {"loc": "https://www.apkscannerpro.com/thank-you"},
+        {"loc": "https://www.apkscannerpro.com/best-antivirus-for-android"},
+    ]
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for page in pages:
+        xml += "  <url>\n"
+        xml += f"    <loc>{page['loc']}</loc>\n"
+        if "priority" in page:
+            xml += f"    <priority>{page['priority']}</priority>\n"
+        xml += "  </url>\n"
+    xml += "</urlset>\n"
+
+    return Response(xml, mimetype="application/xml")
+
 
 @app.route("/scan-stats")
 def scan_stats():
@@ -503,5 +556,6 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
