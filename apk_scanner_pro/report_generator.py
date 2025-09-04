@@ -13,6 +13,7 @@ from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 import tempfile
 import json
+import csv
 
 # Import scan functions
 from . import scan_worker
@@ -29,7 +30,7 @@ COMPANY_URL = "https://apkscannerpro.com"
 COMPANY_SUPPORT_EMAIL = "support@apkscannerpro.com"
 
 
-# === Generate full human-readable report ===
+# === Generate full human-readable report with AI ===
 def generate_report(scan_result: dict) -> str:
     threat_data = str(scan_result)
     prompt = f"""
@@ -149,12 +150,14 @@ def generate_pdf_report(summary: str, report_text: str, file_name: str = "APK Fi
     return buffer
 
 
-# === Append email into subscribers.json ===
-def add_to_subscribers(email: str, name: str = ""):
+# === Append email into subscribers.json + subscribers.csv ===
+def add_to_subscribers(email: str, name: str = "", file_name: str = ""):
     try:
-        subs_file = os.path.join(os.path.dirname(__file__), "Subscribers", "subscribers.json")
-        os.makedirs(os.path.dirname(subs_file), exist_ok=True)
+        subs_dir = os.path.join(os.path.dirname(__file__), "Subscribers")
+        os.makedirs(subs_dir, exist_ok=True)
 
+        # JSON log
+        subs_file = os.path.join(subs_dir, "subscribers.json")
         data = []
         if os.path.exists(subs_file):
             try:
@@ -162,14 +165,24 @@ def add_to_subscribers(email: str, name: str = ""):
                     data = json.load(f)
             except Exception:
                 data = []
-
         if not any(sub.get("email") == email for sub in data):
-            data.append({"name": name, "email": email})
+            data.append({"name": name, "email": email, "file": file_name})
             with open(subs_file, "w") as f:
                 json.dump(data, f, indent=2)
-            print(f"📩 Added {email} to subscribers.json")
+
+        # CSV log (easy export to Excel/Sheets)
+        csv_file = os.path.join(subs_dir, "subscribers.csv")
+        write_header = not os.path.exists(csv_file)
+        with open(csv_file, "a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            if write_header:
+                writer.writerow(["timestamp", "email", "name", "file"])
+            writer.writerow([datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'), email, name, file_name])
+
+        print(f"📩 Added {email} to subscribers.json & subscribers.csv")
+
     except Exception as e:
-        print(f"❌ Failed to update subscribers.json: {e}")
+        print(f"❌ Failed to update subscribers: {e}")
 
 
 # === Send report via email (Plain Text + PDF) ===
@@ -183,45 +196,61 @@ def send_report_via_email(to_email: str, scan_result: dict, file_name: str = "AP
     smtp_server = os.getenv("SMTP_SERVER", "smtpout.secureserver.net")
     smtp_port = int(os.getenv("SMTP_PORT", 587))
 
-    msg = MIMEMultipart()
-    msg["From"] = f"{COMPANY_NAME} <{sender_email}>"
-    msg["To"] = to_email
-    msg["Subject"] = f"{COMPANY_NAME} - Security Report for {file_name}"
-
-    # === Branded Plain Text Email Body ===
     verdict = scan_result.get("verdict", "Unknown")
     vt_stats = scan_result.get("virustotal", {})
     ai_summary = scan_result.get("ai", {}).get("ai_summary", "")
 
+    msg = MIMEMultipart()
+    msg["From"] = f"{COMPANY_NAME} <{sender_email}>"
+    msg["To"] = to_email
+    msg["Subject"] = f"{COMPANY_NAME} Report – {file_name} ({verdict})"
+
+    # === Branded Plain Text Email Body ===
     plain_body = f"""
-{COMPANY_NAME} - Malware Risk Report
-====================================
+🔒 {COMPANY_NAME} – Security Report
 
-📅 Scan Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}
-📂 File: {file_name}
-✅ Final Verdict: {verdict}
+📂 File/URL: {file_name}
+📅 Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC
+✅ Verdict: {verdict}
 
---- Summary ---
+━━━━━━━━━━━━━━━━━━━
+📊 Scan Overview
+━━━━━━━━━━━━━━━━━━━
+- 🔴 Malicious: {vt_stats.get("malicious", 0)}
+- 🟠 Suspicious: {vt_stats.get("suspicious", 0)}
+- 🟢 Harmless: {vt_stats.get("harmless", 0)}
+- ⚪ Undetected: {vt_stats.get("undetected", 0)}
+
+━━━━━━━━━━━━━━━━━━━
+📌 Summary
+━━━━━━━━━━━━━━━━━━━
 {summary}
 
---- AI Analysis ---
+━━━━━━━━━━━━━━━━━━━
+🤖 AI Analysis
+━━━━━━━━━━━━━━━━━━━
 {ai_summary}
 
---- VirusTotal Stats ---
-Malicious: {vt_stats.get("malicious", 0)}
-Suspicious: {vt_stats.get("suspicious", 0)}
-Undetected: {vt_stats.get("undetected", 0)}
-Harmless: {vt_stats.get("harmless", 0)}
-
---- Detailed Report ---
+━━━━━━━━━━━━━━━━━━━
+📋 Detailed Report
+━━━━━━━━━━━━━━━━━━━
 {report_text}
 
---- Recommendation ---
-🔒 Protect your device with Bitdefender 👉 {BITDEFENDER_AFFILIATE_LINK}
+━━━━━━━━━━━━━━━━━━━
+🛡️ Recommendations
+━━━━━━━━━━━━━━━━━━━
+1️⃣ Download apps only from trusted sources  
+2️⃣ Monitor undetected cases for updates  
+3️⃣ Use extra security tools like Bitdefender  
+4️⃣ Keep apps updated to patch vulnerabilities  
+5️⃣ Backup important data regularly  
 
----
-Generated by {COMPANY_NAME}
-🌐 Website: {COMPANY_URL}
+━━━━━━━━━━━━━━━━━━━
+🔗 Protect your device with Bitdefender:
+{BITDEFENDER_AFFILIATE_LINK}
+
+Generated by {COMPANY_NAME}  
+🌐 Website: {COMPANY_URL}  
 📧 Support: {COMPANY_SUPPORT_EMAIL}
 """
 
@@ -240,8 +269,8 @@ Generated by {COMPANY_NAME}
 
         print(f"✅ Report sent successfully to {to_email}")
 
-        # Append email to subscribers.json
-        add_to_subscribers(to_email)
+        # Save lead
+        add_to_subscribers(to_email, "", file_name)
 
         return True
     except Exception as e:
