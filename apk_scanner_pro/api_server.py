@@ -360,6 +360,10 @@ from flask import redirect
 def home():
     return render_template("index.html")
 
+@app.route("/best-antivirus-for-android")
+def best_antivirus_blog():
+    return render_template("best-antivirus-for-android.html")
+
 @app.route("/pricing")
 def pricing():
     return render_template("pricing.html")
@@ -499,3 +503,4 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
