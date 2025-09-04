@@ -436,6 +436,10 @@ def sitemap_xml():
 
     return Response(xml, mimetype="application/xml")
 
+@app.before_request
+def redirect_to_https():
+    if request.headers.get("X-Forwarded-Proto", "http") != "https":
+        return redirect(request.url.replace("http://", "https://"), code=301)
 
 @app.route("/scan-stats")
 def scan_stats():
@@ -556,6 +560,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
