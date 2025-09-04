@@ -14,6 +14,12 @@
   <meta name="keywords" content="APK Scanner, free apk malware scanner, scan apk online, android virus check, apk virus scanner, scan play store apk, apk scanner pro, online apk scan, android security, AI malware detection"/>
   <meta name="robots" content="index, follow"/>
 
+  <!-- Favicon -->
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon"/>
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon"/>
+  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}" sizes="32x32" type="image/png">
+  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}" sizes="192x192" type="image/png">
+
   <!-- Open Graph -->
   <meta property="og:title" content="APK Scanner Pro – Free Online APK Malware Scanner"/>
   <meta property="og:description" content="Scan APK files instantly for malware. 200 free scans/day. Extra scans $1. AI-powered + VirusTotal + Bitdefender. Protect your Android apps before you install."/>
@@ -27,7 +33,7 @@
   <meta name="twitter:description" content="Scan APK files for free with AI + VirusTotal + Bitdefender. Detect spyware, trojans & malware. 200 free scans/day."/>
   <meta name="twitter:image" content="{{ url_for('static', filename='logo.png') }}"/>
 
-  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}"/>
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
 
   <!-- Google Analytics -->
@@ -37,6 +43,21 @@
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', 'G-TRVNTQ0ZT4');
+  </script>
+
+  <!-- Structured Data for Organization / Logo -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "APK Scanner Pro",
+    "url": "https://www.apkscannerpro.com",
+    "logo": "https://www.apkscannerpro.com/static/logo.png",
+    "sameAs": [
+      "https://www.tiktok.com/@apkscanner",
+      "https://www.instagram.com/apkscannerpro/"
+    ]
+  }
   </script>
 
   <style>
@@ -358,4 +379,5 @@
   </script>
 </body>
 </html>
+
 
