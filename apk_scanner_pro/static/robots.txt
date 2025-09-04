@@ -1,9 +1,12 @@
+Sitemap: https://www.apkscannerpro.com/sitemap.xml
+
 User-agent: *
 Allow: /
 
-Sitemap: https://www.apkscannerpro.com/sitemap.xml
+# Optional: polite crawl delay for smaller bots (Google ignores this)
+Crawl-delay: 2
 
-# AI bots allowed for indexing and retrieval
+# AI bots explicitly allowed
 User-agent: GPTBot
 Allow: /
 
@@ -18,4 +21,3 @@ Allow: /
 
 User-agent: Bytespider
 Allow: /
-
