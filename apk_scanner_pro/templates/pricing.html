@@ -28,25 +28,42 @@
   <meta name="twitter:description" content="Scan APKs for malware free. 200 free scans daily. Extra scans just $1.">
   <meta name="twitter:image" content="https://apkscannerpro.com/static/logo.png">
 
-  <!-- Schema Markup for AEO + AIO -->
+  <!-- Enhanced Product + Brand + Free vs Paid Plan Schema -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Product",
     "name": "APK Scanner Pro - Malware Scan",
-    "description": "200 free APK malware scans per day. After the free limit, each scan costs $1.",
+    "description": "AI-powered APK malware scanner. 200 free scans daily. Extra scans available for $1 each.",
+    "image": "https://apkscannerpro.com/static/logo.png",
     "brand": {
       "@type": "Brand",
       "name": "APK Scanner Pro",
       "logo": "https://apkscannerpro.com/static/logo.png"
     },
-    "offers": {
-      "@type": "Offer",
-      "price": "1.00",
-      "priceCurrency": "USD",
-      "availability": "https://schema.org/InStock",
-      "url": "https://apkscannerpro.com/pricing"
-    }
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Free Plan",
+        "price": "0.00",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.apkscannerpro.com/pricing",
+        "description": "200 free malware scans per day with AI + VirusTotal integration."
+      },
+      {
+        "@type": "Offer",
+        "name": "Paid Plan",
+        "price": "1.00",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.apkscannerpro.com/pricing",
+        "description": "Each additional scan after the free daily limit costs $1."
+      }
+    ],
+    "award": "Secure AI Malware Scans",
+    "isAccessibleForFree": false,
+    "mainEntityOfPage": "https://www.apkscannerpro.com/pricing"
   }
   </script>
 
@@ -184,23 +201,14 @@
     <p>Contact: <a href="mailto:support@apkscannerpro.com">support@apkscannerpro.com</a></p>
     
     <!-- Social Icons -->
-     <footer>
-    <div class="flex justify-center space-x-4 mt-4">
+     <div class="flex justify-center space-x-4 mt-4">
       <a href="https://www.tiktok.com/@apkscanner" target="_blank" class="transition-transform transform hover:scale-110 hover:opacity-80">
         <img src="https://cdn-icons-png.flaticon.com/512/3046/3046120.png" alt="TikTok" class="inline-block" style="width:22px; height:22px;">
       </a>
       <a href="https://www.instagram.com/apkscannerpro/" target="_blank" class="transition-transform transform hover:scale-110 hover:opacity-80">
         <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram" class="inline-block" style="width:22px; height:22px;">
       </a>
-</div>
+    </div>
   </footer>
 </body>
 </html>
-
-
-
-
-
-
-
-
