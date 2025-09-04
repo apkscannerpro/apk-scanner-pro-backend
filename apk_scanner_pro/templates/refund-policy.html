@@ -66,7 +66,10 @@
 <body>
   <!-- Header -->
   <header>
-    <img src="https://apkscannerpro.com/static/logo.png" alt="APK Scanner Pro Logo" style="max-width:200px; display:block; margin:auto 0 2rem;">
+    <!-- Logo -->
+    <img src="{{ url_for('static', filename='logo.png') }}" 
+     alt="APK Scanner Pro Logo" 
+     style="max-width: 120px; height: auto; display: block; margin: 0 auto;">
     <a href="/">APK Scanner Pro</a>
   </header>
 
@@ -143,5 +146,6 @@
   </footer>
 </body>
 </html>
+
 
 
