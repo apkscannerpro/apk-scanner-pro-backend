@@ -125,52 +125,82 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   
   <!-- HERO -->
-  <header>
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="APK Scanner Pro Logo" style="max-width: 280px; height: auto; display: block; margin: 0 auto;">
-    <h1>APK Scanner Pro</h1>
-    <p>Free & AI-powered <strong>APK malware scanner</strong> for Android. Instantly detect spyware, trojans, adware, and viruses inside APK files. Powered by <strong>AI + VirusTotal + Bitdefender</strong> to give you maximum protection before installation.</p>
-    <button class="btn" onclick="document.getElementById('uploadSection').scrollIntoView({behavior:'smooth'})">🚀 Start Free Scan</button>
-  </header>
+<header>
+  <img src="{{ url_for('static', filename='logo.png') }}" alt="APK Scanner Pro Logo" style="max-width: 280px; height: auto; display: block; margin: 0 auto;">
+  <h1>APK Scanner Pro</h1>
+  <p>Free & AI-powered <strong>APK malware scanner</strong> for Android. Instantly detect spyware, trojans, adware, and viruses inside APK files. Powered by <strong>AI + VirusTotal + Bitdefender</strong> to give you maximum protection before installation.</p>
+  <button class="btn" onclick="document.getElementById('uploadSection').scrollIntoView({behavior:'smooth'})">🚀 Start Free Scan</button>
+</header>
 
-  <div class="container">
-    <!-- FEATURES -->
-    <section>
-      <h2>✅ Why Choose APK Scanner Pro?</h2>
-      <ul>
-        <li>⚡ <strong>Instant APK malware scan</strong> results in seconds</li>
-        <li>🎁 <strong>200 free APK scans daily</strong> per device/IP</li>
-        <li>📧 Detailed <strong>malware report delivered via email</strong></li>
-        <li>🛡️ Privacy-first: No file storage, in-memory scanning only</li>
-        <li>💳 After free limit → Only <strong>$1 per scan</strong> via Paddle checkout</li>
-      </ul>
-    </section>
+<div class="container">
+  <!-- FEATURES -->
+  <section>
+    <h2>✅ Why Choose APK Scanner Pro?</h2>
+    <ul>
+      <li>⚡ <strong>Instant APK malware scan</strong> results in seconds</li>
+      <li>🎁 <strong>200 free APK scans daily</strong> per device/IP</li>
+      <li>📧 Detailed <strong>malware report delivered via email</strong></li>
+      <li>🛡️ Privacy-first: No file storage, in-memory scanning only</li>
+      <li>💳 After free limit → Only <strong>$1 per scan</strong> via Paddle checkout</li>
+    </ul>
+  </section>
 
-    <!-- SCAN UPLOAD -->
-    <section id="uploadSection">
-      <h2>🔍 Scan Your APK Online</h2>
-      <p id="quota">Loading scan quota...</p>
-      <form id="scanForm">
-        <input type="file" id="apkInput" name="apk" accept=".apk" class="input"><br>
-        <p style="margin:0.8rem 0;">or paste APK / Play Store link:</p>
-        <input type="url" id="apkLink" name="apk_link" class="input" placeholder="https://...apk OR Play Store link"><br>
-        <input type="email" id="emailInput" name="email" placeholder="Your email (report sent here)" required class="input"><br>
-        <button class="btn" type="submit">Upload / Submit Link & Scan</button>
-      </form>
+  <!-- ABOUT & TRUST (E-E-A-T SECTION) -->
+  <section class="about-trust" style="padding: 40px 20px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; margin: 30px 0;">
+    <div style="max-width: 900px; margin: auto; text-align: center;">
+      <h2 style="font-size: 1.8rem; margin-bottom: 15px;">🔒 About APK Scanner Pro</h2>
+      <p style="font-size: 1rem; color: #374151; line-height: 1.6; margin-bottom: 20px;">
+        APK Scanner Pro is built to protect <strong>Android users worldwide</strong> with <strong>AI-driven security</strong>.  
+        Our mission is to provide a free, reliable, and automated malware detection system for APK files and Play Store apps.
+      </p>
 
-      <!-- Spinner -->
-      <div id="loadingSpinner"></div>
+      <h3 style="font-size: 1.3rem; margin-bottom: 10px;">📩 Contact Us</h3>
+      <p style="font-size: 1rem; color: #374151; margin-bottom: 20px;">
+        Email: <a href="mailto:support@apkscannerpro.com" style="color: #2563eb; font-weight: bold;">support@apkscannerpro.com</a>
+      </p>
 
-      <div id="successBox" class="success-box"></div>
-      <div id="errorBox" class="error-box"></div>
-    </section>
+      <h3 style="font-size: 1.3rem; margin-bottom: 10px;">📚 Trusted Sources</h3>
+      <p style="font-size: 1rem; color: #374151; line-height: 1.6; margin-bottom: 20px;">
+        Our reports and recommendations are backed by research from trusted cybersecurity leaders:  
+        <a href="https://www.google.com/intl/en/safety/" target="_blank" style="color: #2563eb;">Google Safety Center</a>,  
+        <a href="https://www.bitdefender.com/" target="_blank" style="color: #2563eb;">Bitdefender</a>,  
+        <a href="https://us.norton.com/" target="_blank" style="color: #2563eb;">Norton Security</a>.
+      </p>
 
-    <!-- Blog Internal Link -->
-<div style="text-align:center; margin-top:15px;">
-  <a href="/best-antivirus-for-android" 
-     style="color:#0073e6; text-decoration:none; font-weight:bold;">
-     📖 Read our Blog: Best Antivirus for Android in 2025
-  </a>
-</div>
+      <p style="font-size: 0.9rem; color: #6b7280; margin-top: 20px;">
+        ✅ Reports generated by <strong>APK Scanner Pro</strong><br/>
+        🤖 Reviewed by <em>AI Security Assistant</em> for accuracy & clarity
+      </p>
+    </div>
+  </section>
+
+  <!-- SCAN UPLOAD -->
+  <section id="uploadSection">
+    <h2>🔍 Scan Your APK Online</h2>
+    <p id="quota">Loading scan quota...</p>
+    <form id="scanForm">
+      <input type="file" id="apkInput" name="apk" accept=".apk" class="input"><br>
+      <p style="margin:0.8rem 0;">or paste APK / Play Store link:</p>
+      <input type="url" id="apkLink" name="apk_link" class="input" placeholder="https://...apk OR Play Store link"><br>
+      <input type="email" id="emailInput" name="email" placeholder="Your email (report sent here)" required class="input"><br>
+      <button class="btn" type="submit">Upload / Submit Link & Scan</button>
+    </form>
+
+    <!-- Spinner -->
+    <div id="loadingSpinner"></div>
+
+    <div id="successBox" class="success-box"></div>
+    <div id="errorBox" class="error-box"></div>
+  </section>
+
+  <!-- Blog Internal Link -->
+  <div style="text-align:center; margin-top:15px;">
+    <a href="/best-antivirus-for-android" 
+       style="color:#0073e6; text-decoration:none; font-weight:bold;">
+       📖 Read our Blog: Best Antivirus for Android in 2025
+    </a>
+  </div>
+
 
     <!-- SECURITY NOTE -->
 <div style="margin-top: 30px; padding: 20px; border-radius: 12px; background: #f9f9f9; border: 1px solid #ddd; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); color:#222;">
@@ -399,6 +429,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   </script>
 </body>
 </html>
+
 
 
 
