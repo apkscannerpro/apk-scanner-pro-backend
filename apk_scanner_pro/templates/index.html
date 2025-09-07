@@ -252,9 +252,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   </p>
 
   <!-- Free Quota Display -->
-  <div id="quota" style="font-weight: bold; margin-top:15px; color:#00c6ff;">
-    Loading free scans remaining...
+  <div id="freeQuota" style="font-weight: bold; margin-top:15px; color:#00c6ff;">
+  Loading free scans remaining...
   </div>
+
 
   <!-- Premium Tier Info -->
   <div id="premiumInfo" style="display:none; margin-top:15px; padding:15px; border:1px solid #ff4757; border-radius:10px; background:#1a1a1a; color:#fff;">
@@ -461,36 +462,48 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   // -----------------------------
   // Quota Update
   // -----------------------------
-  async function updateQuota() {
-    const q = document.getElementById('quota');
-    try {
-      const res = await fetch('/scan-stats');
-      const data = await res.json();
+  let scanAttempted = false; // Flag to track if user tried a scan
 
-      if (data.free_scans_remaining > 0) {
-        q.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today`;
-      } else {
-        q.innerHTML = `⚠️ No free scans left. Basic scan costs $1.`;
-        showPaymentPopup(); // Show payment popup automatically when free quota is finished
+   async function updateQuota() {
+  const q = document.getElementById('freeQuota'); // updated to freeQuota
+  try {
+    const res = await fetch('/scan-stats');
+    const data = await res.json();
+
+    if (data.free_scans_remaining > 0) {
+      q.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today`;
+    } else {
+      q.innerHTML = `⚠️ No free scans left. Basic scan costs $1.`;
+      if (scanAttempted) {
+        showPaymentPopup(); // Only show popup if user tried a scan
       }
-
-      // Show premium scans info dynamically
-      const premiumElement = document.getElementById('premiumInfo');
-      const premiumQuota = document.getElementById('premiumQuota');
-      if (premiumElement && premiumQuota) {
-        premiumElement.style.display = 'block';
-        if (data.premium_scans_remaining !== undefined) {
-          premiumQuota.textContent = `🎯 Only ${data.premium_scans_remaining} premium scans remaining today ($15 each)`;
-        } else {
-          premiumQuota.textContent = `🎯 Premium detailed scans available for $15`;
-        }
-      }
-
-    } catch {
-      q.textContent = "⚠️ Unable to load quota.";
     }
+
+    // Show premium scans info dynamically
+    const premiumElement = document.getElementById('premiumInfo');
+    const premiumQuota = document.getElementById('premiumQuota');
+    if (premiumElement && premiumQuota) {
+      premiumElement.style.display = 'block';
+      if (data.premium_scans_remaining !== undefined) {
+        premiumQuota.textContent = `🎯 Only ${data.premium_scans_remaining} premium scans remaining today ($15 each)`;
+      } else {
+        premiumQuota.textContent = `🎯 Premium detailed scans available for $15`;
+      }
+    }
+
+  } catch {
+    q.textContent = "⚠️ Unable to load quota.";
   }
-  updateQuota();
+}
+
+// Call this function **only after user clicks "Scan"**
+function onUserScanAttempt() {
+  scanAttempted = true;
+  updateQuota(); // Refresh quota and show popup if limit exceeded
+}
+
+updateQuota(); // Initial load updates quota text; popup won't show yet
+
 
   // -----------------------------
   // Polling Scan Result
@@ -529,8 +542,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   // Scan Form Submit
   // -----------------------------
   document.getElementById('scanForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
+  e.preventDefault();
+  onUserScanAttempt(); // <-- add this here
+
+  const fd = new FormData(e.target);
+  // ... rest of your scan logic
 
     // Optional premium request
     const premiumCheckbox = document.getElementById('premiumOption');
@@ -629,6 +645,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 </script>
 </body>
 </html>
+
 
 
 
