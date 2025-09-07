@@ -253,8 +253,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   <!-- Free Quota Display -->
  <div id="freeQuota" style="font-weight: bold; margin-top:15px; color:#00c6ff;">
-  Loading free scans remaining...
- </div>
+  🎉 200 free scans remaining today
+</div>
 
 
   <!-- Premium Tier Info -->
@@ -464,52 +464,68 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   </footer>
 
 <script>
-let scanAttempted = false; // Tracks if user tried a scan
+document.addEventListener('DOMContentLoaded', () => {
+  let scanAttempted = false; // Tracks if user tried a scan
 
-// -----------------------------
-// Update quota dynamically
-// -----------------------------
-async function updateQuota() {
-  try {
-    const res = await fetch('/scan-stats');
-    const data = await res.json();
+  // -----------------------------
+  // Update quota dynamically
+  // -----------------------------
+  async function updateQuota() {
+    try {
+      const res = await fetch('/scan-stats');
+      const data = await res.json();
 
-    // Free quota display
-    const freeQuotaEl = document.getElementById('freeQuota');
-    if (data.free_scans_remaining > 0) {
-      freeQuotaEl.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today`;
-    } else {
-      freeQuotaEl.textContent = `⚠️ No free scans left. Basic scan costs $1.`;
-      if (scanAttempted) showPaymentPopup();
-    }
-
-    // Premium quota display
-    const premiumQuotaEl = document.getElementById('premiumQuota');
-    const premiumInfoEl = document.getElementById('premiumInfo');
-    if (premiumQuotaEl && premiumInfoEl) {
-      premiumInfoEl.style.display = 'block';
-      if (data.premium_scans_remaining !== undefined) {
-        premiumQuotaEl.textContent = `🎯 ${data.premium_scans_remaining} premium scans remaining ($15 each)`;
-      } else {
-        premiumQuotaEl.textContent = `🎯 Premium detailed scans available for $15`;
+      // Free quota display
+      const freeQuotaEl = document.getElementById('freeQuota');
+      if (freeQuotaEl) {
+        if (data.free_scans_remaining !== undefined) {
+          freeQuotaEl.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today`;
+        } else {
+          freeQuotaEl.textContent = `⚠️ Unable to load free scans`;
+        }
       }
+
+      // Premium quota display
+      const premiumQuotaEl = document.getElementById('premiumQuota');
+      const premiumInfoEl = document.getElementById('premiumInfo');
+      if (premiumQuotaEl && premiumInfoEl) {
+        premiumInfoEl.style.display = 'block';
+        if (data.premium_scans_remaining !== undefined) {
+          premiumQuotaEl.textContent = `🎯 ${data.premium_scans_remaining} premium scans remaining ($15 each)`;
+        } else {
+          premiumQuotaEl.textContent = `🎯 Premium detailed scans available for $15`;
+        }
+      }
+
+      // If free scans exhausted and user tried a scan, show payment popup
+      if (data.free_scans_remaining === 0 && scanAttempted) {
+        showPaymentPopup();
+      }
+
+    } catch (err) {
+      console.error(err);
+      const freeQuotaEl = document.getElementById('freeQuota');
+      const premiumQuotaEl = document.getElementById('premiumQuota');
+      if (freeQuotaEl) freeQuotaEl.textContent = "⚠️ Unable to load free scans";
+      if (premiumQuotaEl) premiumQuotaEl.textContent = "⚠️ Unable to load premium scans";
     }
-
-  } catch (err) {
-    document.getElementById('freeQuota').textContent = "⚠️ Unable to load quota.";
-    console.error(err);
   }
-}
 
-// Call on user scan attempt
-function onUserScanAttempt() {
-  scanAttempted = true;
+  // Call on user scan attempt
+  function onUserScanAttempt() {
+    scanAttempted = true;
+    updateQuota();
+  }
+
+  // Initial quota load immediately
   updateQuota();
-}
 
-// Initial quota load
-updateQuota();
-setInterval(updateQuota, 10000); // refresh every 10 sec
+  // Refresh quotas every 10 seconds
+  setInterval(updateQuota, 10000);
+  
+  // Expose scan attempt function globally
+  window.onUserScanAttempt = onUserScanAttempt;
+});
 
 // -----------------------------
 // Poll scan result
@@ -649,6 +665,7 @@ if (premiumPayBtn) {
 </script>
 </body>
 </html>
+
 
 
 
