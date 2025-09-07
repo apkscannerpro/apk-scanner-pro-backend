@@ -163,7 +163,7 @@ def download_apk_to_tmp(url: str) -> str:
                     f.write(chunk)
     return local_path
 
-def send_report_via_email(email_to, scan_result, file_name_or_url=None):  # <-- updated signature
+def send_report_via_email(email_to, scan_result, file_name_or_url=None, premium=False):
     try:
         smtp_host = os.getenv("SMTP_SERVER", "smtpout.secureserver.net")
         smtp_port = int(os.getenv("SMTP_PORT", "587"))
@@ -172,8 +172,17 @@ def send_report_via_email(email_to, scan_result, file_name_or_url=None):  # <-- 
         if not (smtp_user and smtp_pass):
             raise RuntimeError("SMTP credentials missing")
 
-        summary = generate_summary(scan_result)
-        report_text = generate_report(scan_result)
+        if premium:
+    # Premium scan → full report
+    summary = generate_summary(scan_result)
+    report_text = generate_report(scan_result)
+    scan_type_notice = "🔐 Premium Scan — Full Detailed Report"
+else:
+    # Free scan → only summary, brief message
+    summary = generate_summary(scan_result)
+    report_text = "Full detailed report is available for premium scans only. Upgrade to premium to get complete results."
+    scan_type_notice = "🔓 Free Scan — Summary Only"
+
 
         company = os.getenv("COMPANY_NAME", "APK Scanner Pro")
         affiliate = os.getenv("BITDEFENDER_AFFILIATE_LINK", "https://bitdefender.com")
@@ -189,7 +198,7 @@ def send_report_via_email(email_to, scan_result, file_name_or_url=None):  # <-- 
 
         # Branded, readable plain-text (no HTML)
         email_body = f"""
-📅 {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}
+📅 {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')} — {scan_type_notice}
 🏢 {company} — Security Report
 
 ━━━━━━━━━━━━━━━━━━━━━━━
@@ -311,22 +320,34 @@ def _start_job(target_fn, *args, **kwargs):
     EXECUTOR.submit(_run)
     return job_id
 
-def _finalize_scan(scan_result, user_email, file_name_or_url=None):  # <-- updated
+def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False):
+    """
+    Handles email sending and scan result processing.
+    - Free scans: basic report
+    - Premium scans: full report
+    """
     if isinstance(scan_result, dict) and "error" in scan_result:
         return {"error": scan_result.get("error", "Scan failed"), "success": False, "email": user_email}
 
     increment_scans()
     if user_email:
-        email_sent = send_report_via_email(user_email, scan_result, file_name_or_url=file_name_or_url)  # <-- pass through
-        # save lead from scan
+        # Free scan → basic summary only
+        if not premium:
+            email_sent = send_report_via_email(user_email, {"summary": generate_summary(scan_result)}, file_name_or_url=file_name_or_url)
+        else:
+            # Premium → full report
+            email_sent = send_report_via_email(user_email, scan_result, file_name_or_url=file_name_or_url)
+        
+        # Save lead from scan
         _save_lead(name="", email=user_email, source="scan_report")
-        return {"success": email_sent, "email": user_email}
-    return {"success": False, "email": None}
+        return {"success": email_sent, "email": user_email, "premium": premium}
+    return {"success": False, "email": None, "premium": premium}
 
-def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None):  # <-- updated signature
+
+ddef _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False):
     try:
         scan_result = scan_apk_file(tmp_path)
-        return _finalize_scan(scan_result, user_email, file_name_or_url=file_name_or_url)
+        return _finalize_scan(scan_result, user_email, file_name_or_url=file_name_or_url, premium=premium)
     finally:
         try:
             if tmp_path and os.path.exists(tmp_path):
@@ -334,7 +355,8 @@ def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None):  # <-
         except Exception:
             pass
 
-def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None):  # <-- updated signature
+
+def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premium=False):
     if is_direct_apk_url(url_param):
         local = download_apk_to_tmp(url_param)
         try:
@@ -347,8 +369,8 @@ def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None):  # <-
                 pass
     else:
         scan_result = scan_url(url_param)
-    # Prefer the explicit file_name_or_url if provided, else use url_param
-    return _finalize_scan(scan_result, user_email, file_name_or_url=file_name_or_url or url_param)
+    return _finalize_scan(scan_result, user_email, file_name_or_url=file_name_or_url or url_param, premium=premium)
+
 
 # -------------------------------------------------------------------------------
 # Routes
@@ -388,10 +410,10 @@ def thank_you():
 def paid_scan():
     """
     Called after manual payment confirmation (frontend thank-you redirect).
-    Increments quota by +1 so the user can scan again.
+    Unlocks premium scan for the user.
     """
     increment_scans(1)
-    return jsonify({"ok": True, "message": "Paid scan unlocked"})
+    return jsonify({"ok": True, "message": "Paid scan unlocked", "premium": True})
 
 
 # Robots.txt (served dynamically)
@@ -473,12 +495,6 @@ def scan_async():
     used = get_used_scans()
     FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
 
-    if used >= FREE_LIMIT:
-        return jsonify({
-            "error": "Daily free scan limit reached.",
-            "payment_required": True
-        }), 403
-
     json_body = request.get_json(silent=True) or {}
     form = request.form or {}
 
@@ -497,19 +513,32 @@ def scan_async():
     if not user_email:
         return jsonify({"error": "Email is required"}), 400
 
+    # Premium flag
+    premium = False
+    if "premium" in form:
+        premium = form.get("premium").lower() == "true"
+    elif "premium" in json_body:
+        premium = json_body.get("premium") is True
+
+    # Check free limit only for non-premium
+    if not premium and used >= FREE_LIMIT:
+        return jsonify({
+            "error": "Daily free scan limit reached.",
+            "payment_required": True
+        }), 403
+
     if apk_file:
         filename = secure_filename(apk_file.filename or f"upload-{uuid.uuid4()}.apk")
         tmp_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4()}_{filename}")
         apk_file.save(tmp_path)
-        # pass filename for email subject
-        job_id = _start_job(_scan_job_file, user_email=user_email, tmp_path=tmp_path, file_name_or_url=filename)
+        job_id = _start_job(_scan_job_file, user_email=user_email, tmp_path=tmp_path, file_name_or_url=filename, premium=premium)
     elif url_param:
-        # pass URL for email subject
-        job_id = _start_job(_scan_job_url, user_email=user_email, url_param=url_param, file_name_or_url=url_param)
+        job_id = _start_job(_scan_job_url, user_email=user_email, url_param=url_param, file_name_or_url=url_param, premium=premium)
     else:
         return jsonify({"error": "No APK file or apk_url provided"}), 400
 
-    return jsonify({"job_id": job_id})
+    return jsonify({"job_id": job_id, "premium": premium})
+
 
 @app.route("/scan-result/<job_id>")
 def scan_result_poll(job_id):
@@ -575,6 +604,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
