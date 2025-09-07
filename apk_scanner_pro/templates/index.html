@@ -475,11 +475,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/scan-stats');
       const data = await res.json();
 
+      // Hide "Loading scan quota..."
+      const quotaPlaceholder = document.getElementById('quota');
+      if (quotaPlaceholder) quotaPlaceholder.style.display = 'none';
+
       // Free quota display
       const freeQuotaEl = document.getElementById('freeQuota');
       if (freeQuotaEl && data.free_scans_remaining !== undefined) {
         if (data.free_scans_remaining > 0) {
-          freeQuotaEl.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today`;
+          freeQuotaEl.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today (out of ${data.free_limit})`;
         } else {
           freeQuotaEl.textContent = `⚠️ No free scans left. Basic scan costs $1.`;
           if (scanAttempted) showPaymentPopup(); // Only show popup if user tried a scan
@@ -492,13 +496,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (premiumQuotaEl && premiumInfoEl) {
         premiumInfoEl.style.display = 'block';
         if (data.premium_scans_remaining !== undefined) {
-          premiumQuotaEl.textContent = `🎯 ${data.premium_scans_remaining} premium scans remaining ($15 each)`;
+          premiumQuotaEl.textContent = `🎯 ${data.premium_scans_remaining} premium scans remaining today (out of ${data.premium_limit})`;
         } else {
           premiumQuotaEl.textContent = `🎯 Premium detailed scans available for $15`;
         }
       }
     } catch (err) {
-      console.error(err);
+      console.error("Quota fetch error:", err);
       const freeQuotaEl = document.getElementById('freeQuota');
       const premiumQuotaEl = document.getElementById('premiumQuota');
       if (freeQuotaEl) freeQuotaEl.textContent = "⚠️ Unable to load free scans";
@@ -512,6 +516,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function onUserScanAttempt() {
     scanAttempted = true;
   }
+
+  // -----------------------------
+  // Init: Load quota once page loads
+  // -----------------------------
+  updateQuota();
+});
 
   // -----------------------------
   // Poll scan result
@@ -667,6 +677,7 @@ if (premiumPayBtn) {
 </script>
 </body>
 </html>
+
 
 
 
