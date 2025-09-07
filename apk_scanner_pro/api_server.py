@@ -345,7 +345,7 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
     return {"success": False, "email": None, "premium": premium}
 
 
-ddef _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False):
+def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False):
     try:
         scan_result = scan_apk_file(tmp_path)
         return _finalize_scan(scan_result, user_email, file_name_or_url=file_name_or_url, premium=premium)
@@ -605,6 +605,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
