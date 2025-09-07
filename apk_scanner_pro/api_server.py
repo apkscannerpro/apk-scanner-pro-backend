@@ -481,28 +481,11 @@ def enforce_https_and_www():
     if host == "apkscannerpro.com":
         return redirect("https://www.apkscannerpro.com" + request.full_path, code=301)
 
-@app.route("/scan-stats")
-def scan_stats():
-    reset_if_new_day()
-    used = get_used_scans()
-    FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
-
-    # Premium scans remaining (optional, can be unlimited or limited per day)
-    PREMIUM_LIMIT = int(os.getenv("MAX_PREMIUM_SCANS_PER_DAY", "50"))  # set your premium daily cap
-    premium_used = get_used_premium_scans()  # implement this similar to free scans
-
-    return jsonify({
-        "free_scans_remaining": max(0, FREE_LIMIT - used),
-        "scan_count_today": used,
-        "premium_scans_remaining": max(0, PREMIUM_LIMIT - premium_used)
-    })
-
-
 # -----------------------------
-# Scan stats (for frontend quota display)
+# Scan stats endpoint (for frontend quota display)
 # -----------------------------
 @app.route("/scan-stats")
-def scan_stats():
+def scan_stats():  # only one function now
     reset_if_new_day()
     used = get_used_scans()
     premium_used = get_used_premium_scans()  # Make sure this exists
@@ -569,7 +552,7 @@ def scan_async():
             }), 403
 
     # -----------------------------
-    # Start scan job (properly indented inside function)
+    # Start scan job
     # -----------------------------
     if apk_file:
         filename = secure_filename(apk_file.filename or f"upload-{uuid.uuid4()}.apk")
@@ -597,11 +580,12 @@ def scan_async():
     # Increment daily scan counters
     # -----------------------------
     if premium:
-        increment_premium_scans()  # Must exist and track daily premium scans
+        increment_premium_scans()  # Must exist
     else:
-        increment_free_scans()     # Already exists for free scans
+        increment_free_scans()     # Already exists
 
     return jsonify({"job_id": job_id, "premium": premium})
+
 
 
 @app.route("/scan-result/<job_id>")
@@ -668,6 +652,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
