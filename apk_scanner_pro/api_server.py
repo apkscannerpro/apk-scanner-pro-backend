@@ -486,28 +486,28 @@ def enforce_https_and_www():
 # -----------------------------
 @app.route("/scan-stats")
 def scan_stats():
-    # Ensure counters reset at start of new day
+    # Reset counters if a new day
     reset_if_new_day()
 
-    # Get the number of used free scans; 0 if not set
-    used = get_used_scans()
-    if used is None:
-        used = 0
+    # Get used scan counts, default to 0
+    used = get_used_scans() or 0
+    premium_used = get_used_premium_scans() or 0
 
-    # Get the number of used premium scans; 0 if not set
-    premium_used = get_used_premium_scans()
-    if premium_used is None:
-        premium_used = 0
-
-    # Daily limits
+    # Daily limits from environment variables
     FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
     PREMIUM_LIMIT = int(os.getenv("MAX_PREMIUM_SCANS_PER_DAY", "50"))
 
-    # Return JSON stats
+    # Calculate remaining scans (never negative)
+    free_remaining = max(0, FREE_LIMIT - used)
+    premium_remaining = max(0, PREMIUM_LIMIT - premium_used)
+
+    # Return consistent JSON
     return jsonify({
-        "free_scans_remaining": max(0, FREE_LIMIT - used),
+        "free_scans_remaining": free_remaining,
         "scan_count_today": used,
-        "premium_scans_remaining": max(0, PREMIUM_LIMIT - premium_used)
+        "premium_scans_remaining": premium_remaining,
+        "free_limit": FREE_LIMIT,
+        "premium_limit": PREMIUM_LIMIT
     })
 
 
@@ -670,6 +670,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
