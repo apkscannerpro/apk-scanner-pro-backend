@@ -359,11 +359,7 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
     if isinstance(scan_result, dict) and "error" in scan_result:
         return {"error": scan_result.get("error", "Scan failed"), "success": False, "email": user_email}
 
-    # Increment correct counter
-    if premium:
-        increment_premium_scans()
-    else:
-        increment_free_scans()
+    # ✅ Removed quota increment here (already handled in scan_async)
 
     if user_email:
         # Free scan → basic summary only
@@ -386,6 +382,7 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
         return {"success": email_sent, "email": user_email, "premium": premium}
 
     return {"success": False, "email": None, "premium": premium}
+
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False):
     try:
@@ -638,7 +635,7 @@ def scan_async():
             )
 
         # -----------------------------
-        # Increment counters AFTER successful job creation
+        # ✅ Increment counters only ONCE here (removed from _finalize_scan)
         # -----------------------------
         if premium:
             increment_premium_scans()
@@ -717,6 +714,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
