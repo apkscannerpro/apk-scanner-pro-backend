@@ -71,6 +71,7 @@
     .social-icons a {display:inline-block;margin:0 10px}
     .social-icons img {width:32px;height:32px;filter:invert(1);transition:0.3s}
     .social-icons img:hover {transform:scale(1.1)}
+    #confirmationMsg {margin-top:20px;font-size:1.1rem;color:#0f0;display:none;}
   </style>
 </head>
 <body>
@@ -81,6 +82,7 @@
      style="max-width: 120px; height: auto; display: block; margin: 0 auto;">
     <h1>Thank you!</h1>
     <p>Your payment was received. Your account has been credited with one scan.</p>
+    <p id="confirmationMsg">🎉 1 extra scan unlocked! You can now continue scanning.</p>
     <p><button class="btn" onclick="window.location.href='/'">Return & Scan Now</button></p>
     <p style="opacity:.8">If the credit doesn’t appear instantly, wait 10–20 seconds for the webhook to arrive and refresh.</p>
 
@@ -97,11 +99,14 @@
       <p><a href="/privacy">Privacy Policy</a> | <a href="/terms">Terms of Service</a></p>
     </footer>
   </div>
+
+  <!-- Unlock 1 paid scan automatically + show confirmation -->
+  <script>
+    fetch("/paid-scan", {method:"POST"})
+      .then(() => {
+        document.getElementById("confirmationMsg").style.display = "block";
+      })
+      .catch(err => console.error("Failed to unlock paid scan:", err));
+  </script>
 </body>
 </html>
-
-
-
-
-
-
