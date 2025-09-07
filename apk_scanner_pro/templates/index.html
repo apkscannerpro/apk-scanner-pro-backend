@@ -208,80 +208,80 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     </div>
   </section>
 
-  <!-- SCAN UPLOAD -->
-  <section id="uploadSection">
-    <h2>🔍 Scan Your APK Online</h2>
-    <p id="quota">Loading scan quota...</p>
-    <form id="scanForm">
-      <input type="file" id="apkInput" name="apk" accept=".apk" class="input"><br>
-      <p style="margin:0.8rem 0;">or paste APK / Play Store link:</p>
-      <input type="url" id="apkLink" name="apk_link" class="input" placeholder="https://...apk OR Play Store link"><br>
-      <input type="email" id="emailInput" name="email" placeholder="Your email (report sent here)" required class="input"><br>
-      <button class="btn" type="submit">Upload / Submit Link & Scan</button>
+<!-- SCAN UPLOAD -->
+<section id="uploadSection">
+  <h2>🔍 Scan Your APK Online</h2>
 
-      <!-- Free vs Premium Scan Info -->
-<div style="margin: 30px 0; padding:20px; border:1px solid #0072ff; border-radius:10px; background:#0a0a0a; color:#fff;">
-  <h3 style="margin-bottom:12px; color:#00c6ff;">🚀 Free vs Premium Scan</h3>
+  <!-- Live Free Quota -->
+  <p id="quota" style="font-weight:bold; color:#00c6ff;">Loading scan quota...</p>
 
-  <!-- Free vs Premium Table -->
-  <table style="width:100%; text-align:left; border-collapse: collapse; color:#fff;">
-    <tr>
-      <th style="border-bottom:1px solid #00c6ff; padding:8px;">Features</th>
-      <th style="border-bottom:1px solid #00c6ff; padding:8px;">Free</th>
-      <th style="border-bottom:1px solid #00c6ff; padding:8px;">Premium</th>
-    </tr>
-    <tr>
-      <td style="padding:8px; border-bottom:1px solid #444;">Basic Malware Scan</td>
-      <td style="padding:8px; border-bottom:1px solid #444;">✔️</td>
-      <td style="padding:8px; border-bottom:1px solid #444;">✔️</td>
-    </tr>
-    <tr>
-      <td style="padding:8px; border-bottom:1px solid #444;">Historical Malware Lookup</td>
-      <td style="padding:8px; border-bottom:1px solid #444;">❌</td>
-      <td style="padding:8px; border-bottom:1px solid #444;">✔️</td>
-    </tr>
-    <tr>
-      <td style="padding:8px; border-bottom:1px solid #444;">Advanced Analysis Report</td>
-      <td style="padding:8px; border-bottom:1px solid #444;">❌</td>
-      <td style="padding:8px; border-bottom:1px solid #444;">✔️</td>
-    </tr>
-  </table>
+  <!-- Upload Form -->
+  <form id="scanForm">
+    <input type="file" id="apkInput" name="apk" accept=".apk" class="input"><br>
+    <p style="margin:0.8rem 0;">or paste APK / Play Store link:</p>
+    <input type="url" id="apkLink" name="apk_link" class="input" placeholder="https://...apk OR Play Store link"><br>
+    <input type="email" id="emailInput" name="email" placeholder="Your email (report sent here)" required class="input"><br>
+    <button class="btn" type="submit">Upload / Submit Link & Scan</button>
+  </form>
 
-  <p style="margin-top:12px; font-size:0.95rem; color:#ccc;">
-    Want the <strong>Premium report</strong>? You can pay manually via Bank Transfer now. After payment, enter your email & reference in the popup to receive your premium scan.
-  </p>
+  <!-- Free vs Premium Scan Info -->
+  <div style="margin: 30px 0; padding:20px; border:1px solid #0072ff; border-radius:10px; background:#0a0a0a; color:#fff;">
+    <h3 style="margin-bottom:12px; color:#00c6ff;">🚀 Free vs Premium Scan</h3>
 
-  <!-- Free Quota Display -->
- <div id="freeQuota" style="font-weight: bold; margin-top:15px; color:#00c6ff;">
-  🎉 200 free scans remaining today
-</div>
+    <!-- Feature Table -->
+    <table style="width:100%; text-align:left; border-collapse: collapse; color:#fff;">
+      <tr>
+        <th style="border-bottom:1px solid #00c6ff; padding:8px;">Features</th>
+        <th style="border-bottom:1px solid #00c6ff; padding:8px;">Free</th>
+        <th style="border-bottom:1px solid #00c6ff; padding:8px;">Premium</th>
+      </tr>
+      <tr>
+        <td style="padding:8px; border-bottom:1px solid #444;">Basic Malware Scan</td>
+        <td style="padding:8px; border-bottom:1px solid #444;">✔️</td>
+        <td style="padding:8px; border-bottom:1px solid #444;">✔️</td>
+      </tr>
+      <tr>
+        <td style="padding:8px; border-bottom:1px solid #444;">Historical Malware Lookup</td>
+        <td style="padding:8px; border-bottom:1px solid #444;">❌</td>
+        <td style="padding:8px; border-bottom:1px solid #444;">✔️</td>
+      </tr>
+      <tr>
+        <td style="padding:8px; border-bottom:1px solid #444;">Advanced Analysis Report</td>
+        <td style="padding:8px; border-bottom:1px solid #444;">❌</td>
+        <td style="padding:8px; border-bottom:1px solid #444;">✔️</td>
+      </tr>
+    </table>
 
+    <!-- Free Quota Live Display -->
+    <div id="freeQuota" style="font-weight: bold; margin-top:15px; color:#00c6ff;">
+      🎉 You have <span id="freeQuotaValue">200</span> free scans remaining today
+    </div>
 
-  <!-- Premium Tier Info -->
-<div id="premiumInfo" style="display:none; margin-top:15px; padding:15px; border:1px solid #ff4757; border-radius:10px; background:#1a1a1a; color:#fff;">
-  <h3 style="margin-bottom:10px; color:#ff6b81;">💎 Premium Detailed Report</h3>
-  <p style="margin-bottom:8px; font-size:1rem;">
-    Get a <strong>deep analysis report</strong> with historical malware lookup, advanced insights, and developer API access.
-  </p>
-  <p style="margin-bottom:8px; font-size:1.1rem;">
-    <strong>Price:</strong> $15 per premium scan
-  </p>
+    <!-- Premium Info -->
+    <div id="premiumInfo" style="margin-top:20px; padding:15px; border:1px solid #ff4757; border-radius:10px; background:#1a1a1a; color:#fff;">
+      <h3 style="margin-bottom:10px; color:#ff6b81;">💎 Premium Detailed Report</h3>
+      <p style="margin-bottom:8px; font-size:1rem;">
+        Get a <strong>deep analysis report</strong> with historical malware lookup, advanced insights, and developer API access.
+      </p>
+      <p style="margin-bottom:8px; font-size:1.1rem;">
+        <strong>Price:</strong> $15 per premium scan
+      </p>
 
-  <!-- Premium Quota -->
-  <p id="premiumQuota" style="margin-top:5px; font-size:0.95rem; color:#ccc;">
-    Loading premium scans remaining today...
-  </p>
+      <!-- Premium Quota -->
+      <p id="premiumQuota" style="margin-top:5px; font-size:0.95rem; color:#ccc;">
+        Loading premium scans remaining today...
+      </p>
 
-  <!-- Premium Checkbox -->
-  <label style="display:block; margin-top:8px; color:#ccc; font-size:0.95rem; cursor:pointer;">
-    <input type="checkbox" id="premiumOption" style="margin-right:6px;"> I want the Premium Scan (manual payment)
-  </label>
+      <!-- Premium Option -->
+      <label style="display:block; margin-top:8px; color:#ccc; font-size:0.95rem; cursor:pointer;">
+        <input type="checkbox" id="premiumOption" style="margin-right:6px;"> I want the Premium Scan (manual payment)
+      </label>
 
-  <button id="premiumPayBtn" style="margin-top:10px; padding:6px 12px; background:#ff6b81; color:white; border:none; border-radius:5px; cursor:pointer;">
-    Pay & Unlock
-  </button>
-</div>
-</div>
+      <button id="premiumPayBtn" style="margin-top:10px; padding:6px 12px; background:#ff6b81; color:white; border:none; border-radius:5px; cursor:pointer;">
+        Pay & Unlock
+      </button>
+    </div>
+  </div>
 
     </form>
 
@@ -481,8 +481,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Free quota
       const freeQuotaEl = document.getElementById('freeQuota');
-      if (freeQuotaEl && typeof data.free_scans_remaining !== "undefined") {
-        freeQuotaEl.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today (of ${data.free_limit})`;
+      if (freeQuotaEl && typeof data.free_scans_remaining !== "undefined" && typeof data.free_limit !== "undefined") {
+        freeQuotaEl.textContent = `🎉 ${data.free_scans_remaining} of ${data.free_limit} free scans left today`;
       }
 
       // Premium quota
@@ -490,8 +490,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const premiumInfoEl = document.getElementById('premiumInfo');
       if (premiumQuotaEl && premiumInfoEl) {
         premiumInfoEl.style.display = 'block'; // always show
-        if (typeof data.premium_scans_remaining !== "undefined") {
-          premiumQuotaEl.textContent = `🎯 ${data.premium_scans_remaining} premium scans remaining (of ${data.premium_limit}, $15 each)`;
+        if (typeof data.premium_scans_remaining !== "undefined" && typeof data.premium_limit !== "undefined") {
+          premiumQuotaEl.textContent = `🎯 ${data.premium_scans_remaining} of ${data.premium_limit} premium scans left`;
         } else {
           premiumQuotaEl.textContent = "🎯 Premium detailed scans available for $15 each";
         }
@@ -515,6 +515,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function onUserScanAttempt() {
     scanAttempted = true;
+    // Trigger immediate quota refresh after user submits a scan
+    updateQuota();
+  }
+
+  // Attach listener to form submit
+  const scanForm = document.getElementById('scanForm');
+  if (scanForm) {
+    scanForm.addEventListener('submit', () => {
+      onUserScanAttempt();
+    });
   }
 
   // Run once after page load
@@ -678,6 +688,7 @@ if (premiumPayBtn) {
 </script>
 </body>
 </html>
+
 
 
 
