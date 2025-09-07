@@ -254,6 +254,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     Want the <strong>Premium report</strong>? You can pay manually via Bank Transfer (or later via automated gateway). Enter your email & reference in the popup after payment.
   </p>
 </div>
+      <label style="display:block; margin-top:10px; color:#ccc; font-size:0.95rem;">
+  <input type="checkbox" id="premiumOption"> I want the Premium Scan (manual payment)
+</label>
+
     </form>
 
     <!-- Spinner -->
@@ -483,6 +487,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   document.getElementById('scanForm').addEventListener('submit', async e => {
     e.preventDefault();
     const fd=new FormData(e.target);
+    // Optional premium request (for manual payment simulation)
+const premiumCheckbox = document.getElementById('premiumOption');
+if(premiumCheckbox && premiumCheckbox.checked){
+    fd.append('premium', 'true');
+}
     const btn=e.target.querySelector('button');
     btn.disabled=true; btn.textContent='Uploading...';
     document.getElementById('successBox').style.display="none";
@@ -549,6 +558,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 </script>
 </body>
 </html>
+
 
 
 
