@@ -172,18 +172,19 @@ def send_report_via_email(email_to, scan_result, file_name_or_url=None, premium=
         if not (smtp_user and smtp_pass):
             raise RuntimeError("SMTP credentials missing")
 
+        # -------------------
+        # Correctly indented block
+        # -------------------
         if premium:
-    # Premium scan → full report
-    summary = generate_summary(scan_result)
-    report_text = generate_report(scan_result)
-    scan_type_notice = "🔐 Premium Scan — Full Detailed Report"
+            # Premium scan → full report
+            summary = generate_summary(scan_result)
+            report_text = generate_report(scan_result)
+            scan_type_notice = "🔐 Premium Scan — Full Detailed Report"
         else:
-    # Free scan → only summary, brief message
-    summary = generate_summary(scan_result)
-    report_text = "Full detailed report is available for premium scans only. Upgrade to premium to get complete results."
-    scan_type_notice = "🔓 Free Scan — Summary Only"
-
-
+            # Free scan → only summary, brief message
+            summary = generate_summary(scan_result)
+            report_text = "Full detailed report is available for premium scans only. Upgrade to premium to get complete results."
+            scan_type_notice = "🔓 Free Scan — Summary Only"
 
         company = os.getenv("COMPANY_NAME", "APK Scanner Pro")
         affiliate = os.getenv("BITDEFENDER_AFFILIATE_LINK", "https://bitdefender.com")
@@ -605,6 +606,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
