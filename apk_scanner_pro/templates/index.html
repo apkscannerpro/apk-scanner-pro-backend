@@ -467,25 +467,25 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       const res = await fetch('/scan-stats');
       const data = await res.json();
 
-      // Free scans display
       if (data.free_scans_remaining > 0) {
         q.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today`;
       } else {
-        q.innerHTML = `⚠️ No free scans left. Please pay $1 per scan to continue.`;
+        q.innerHTML = `⚠️ No free scans left. Basic scan costs $1.`;
         showPaymentPopup(); // Show payment popup automatically when free quota is finished
       }
 
-      // Premium scans display
+      // Show premium scans info dynamically
       const premiumElement = document.getElementById('premiumInfo');
       const premiumQuota = document.getElementById('premiumQuota');
       if (premiumElement && premiumQuota) {
         premiumElement.style.display = 'block';
         if (data.premium_scans_remaining !== undefined) {
-          premiumQuota.textContent = `🎯 Only ${data.premium_scans_remaining} premium scans remaining today`;
+          premiumQuota.textContent = `🎯 Only ${data.premium_scans_remaining} premium scans remaining today ($15 each)`;
         } else {
-          premiumQuota.textContent = `🎯 Premium scans available`;
+          premiumQuota.textContent = `🎯 Premium detailed scans available for $15`;
         }
       }
+
     } catch {
       q.textContent = "⚠️ Unable to load quota.";
     }
@@ -499,6 +499,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     try {
       const res = await fetch(`/scan-result/${jobId}`);
       const json = await res.json();
+
       if (json.status === "pending") {
         setTimeout(() => pollResult(jobId, btn, email), 3000);
       } else if (json.status === "done" && json.success) {
@@ -514,6 +515,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         errorBox.textContent = json.error || "Scan failed.";
         btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
       }
+
     } catch {
       document.getElementById('loadingSpinner').style.display = "none";
       const errorBox = document.getElementById('errorBox');
@@ -530,7 +532,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     e.preventDefault();
     const fd = new FormData(e.target);
 
-    // Optional premium request (manual payment simulation)
+    // Optional premium request
     const premiumCheckbox = document.getElementById('premiumOption');
     if (premiumCheckbox && premiumCheckbox.checked) {
       fd.append('premium', 'true');
@@ -546,7 +548,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       const res = await fetch('/scan-async', { method: 'POST', body: fd });
       const json = await res.json();
 
-      // Free quota reached → show payment popup
+      // Free quota reached → trigger payment
       if (json.error && json.error.includes("free limit")) {
         document.getElementById('loadingSpinner').style.display = "none";
         showPaymentPopup();
@@ -557,7 +559,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       if (json.job_id) {
         const email = fd.get("email");
         pollResult(json.job_id, btn, email);
-        if (premiumCheckbox) premiumCheckbox.checked = false; // reset premium option
+        if (premiumCheckbox) premiumCheckbox.checked = false; // reset
         updateQuota();
       } else {
         document.getElementById('loadingSpinner').style.display = "none";
@@ -566,6 +568,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         errorBox.textContent = json.error || 'Scan failed';
         btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
       }
+
     } catch {
       document.getElementById('loadingSpinner').style.display = "none";
       const errorBox = document.getElementById('errorBox');
@@ -607,7 +610,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   }
 
   // -----------------------------
-  // Premium Checkbox Auto Popup
+  // Auto trigger payment when premium checkbox clicked
   // -----------------------------
   const premiumOption = document.getElementById('premiumOption');
   if (premiumOption) {
@@ -617,17 +620,16 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   }
 
   // -----------------------------
-  // Premium Pay Button Click
+  // Premium Pay Button on homepage
   // -----------------------------
   const premiumPayBtn = document.getElementById('premiumPayBtn');
   if (premiumPayBtn) {
-    premiumPayBtn.addEventListener('click', () => {
-      showPaymentPopup();
-    });
+    premiumPayBtn.addEventListener('click', () => showPaymentPopup());
   }
 </script>
 </body>
 </html>
+
 
 
 
