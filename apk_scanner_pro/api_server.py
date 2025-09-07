@@ -486,10 +486,17 @@ def scan_stats():
     reset_if_new_day()
     used = get_used_scans()
     FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
+
+    # Premium scans remaining (optional, can be unlimited or limited per day)
+    PREMIUM_LIMIT = int(os.getenv("MAX_PREMIUM_SCANS_PER_DAY", "50"))  # set your premium daily cap
+    premium_used = get_used_premium_scans()  # implement this similar to free scans
+
     return jsonify({
         "free_scans_remaining": max(0, FREE_LIMIT - used),
         "scan_count_today": used,
+        "premium_scans_remaining": max(0, PREMIUM_LIMIT - premium_used)
     })
+
 
 @app.route("/scan-async", methods=["POST"])
 def scan_async():
@@ -522,24 +529,57 @@ def scan_async():
     elif "premium" in json_body:
         premium = json_body.get("premium") is True
 
-    # Check free limit only for non-premium
-    if not premium and used >= FREE_LIMIT:
-        return jsonify({
-            "error": "Daily free scan limit reached.",
-            "payment_required": True
-        }), 403
-
-    if apk_file:
-        filename = secure_filename(apk_file.filename or f"upload-{uuid.uuid4()}.apk")
-        tmp_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4()}_{filename}")
-        apk_file.save(tmp_path)
-        job_id = _start_job(_scan_job_file, user_email=user_email, tmp_path=tmp_path, file_name_or_url=filename, premium=premium)
-    elif url_param:
-        job_id = _start_job(_scan_job_url, user_email=user_email, url_param=url_param, file_name_or_url=url_param, premium=premium)
+    # Check quotas
+    if premium:
+        PREMIUM_LIMIT = int(os.getenv("MAX_PREMIUM_SCANS_PER_DAY", "50"))
+        premium_used = get_used_premium_scans()
+        if premium_used >= PREMIUM_LIMIT:
+            return jsonify({
+                "error": "Daily premium scan limit reached.",
+                "payment_required": True,
+                "premium": True
+            }), 403
+        # Optional: check if $15 payment has been made for this premium scan
     else:
-        return jsonify({"error": "No APK file or apk_url provided"}), 400
+        if used >= FREE_LIMIT:
+            return jsonify({
+                "error": "Daily free scan limit reached. Please pay $1 per scan to continue.",
+                "payment_required": True,
+                "premium": False
+            }), 403
 
-    return jsonify({"job_id": job_id, "premium": premium})
+    # Start scan job
+if apk_file:
+    filename = secure_filename(apk_file.filename or f"upload-{uuid.uuid4()}.apk")
+    tmp_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4()}_{filename}")
+    apk_file.save(tmp_path)
+    job_id = _start_job(
+        _scan_job_file,
+        user_email=user_email,
+        tmp_path=tmp_path,
+        file_name_or_url=filename,
+        premium=premium
+    )
+elif url_param:
+    job_id = _start_job(
+        _scan_job_url,
+        user_email=user_email,
+        url_param=url_param,
+        file_name_or_url=url_param,
+        premium=premium
+    )
+else:
+    return jsonify({"error": "No APK file or apk_url provided"}), 400
+
+# -----------------------------
+# Increment daily scan counters
+# -----------------------------
+if premium:
+    increment_premium_scans()  # Make sure this function exists and tracks daily premium scans
+else:
+    increment_free_scans()     # Already exists, tracks daily free scans
+
+return jsonify({"job_id": job_id, "premium": premium})
 
 
 @app.route("/scan-result/<job_id>")
@@ -606,6 +646,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
