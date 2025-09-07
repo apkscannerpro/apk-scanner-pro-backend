@@ -252,30 +252,35 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   </p>
 
   <!-- Free Quota Display -->
-  <div id="freeQuota" style="font-weight: bold; margin-top:15px; color:#00c6ff;">
+ <div id="freeQuota" style="font-weight: bold; margin-top:15px; color:#00c6ff;">
   Loading free scans remaining...
-  </div>
+ </div>
 
 
   <!-- Premium Tier Info -->
-  <div id="premiumInfo" style="display:none; margin-top:15px; padding:15px; border:1px solid #ff4757; border-radius:10px; background:#1a1a1a; color:#fff;">
-    <h3 style="margin-bottom:10px; color:#ff6b81;">💎 Premium Detailed Report</h3>
-    <p style="margin-bottom:8px; font-size:1rem;">
-      Get a <strong>deep analysis report</strong> with historical malware lookup, advanced insights, and developer API access.
-    </p>
-    <p style="margin-bottom:8px; font-size:1.1rem;">
-      <strong>Price:</strong> $15 per premium scan
-    </p>
-    <p id="premiumQuota" style="margin-top:5px; font-size:0.95rem; color:#ccc;">
-      Loading premium scans remaining today...
-    </p>
-    <label style="display:block; margin-top:8px; color:#ccc; font-size:0.95rem; cursor:pointer;">
-      <input type="checkbox" id="premiumOption" style="margin-right:6px;"> I want the Premium Scan (manual payment)
-    </label>
-    <button id="premiumPayBtn" style="margin-top:10px; padding:6px 12px; background:#ff6b81; color:white; border:none; border-radius:5px; cursor:pointer;">
-      Pay & Unlock
-    </button>
-  </div>
+<div id="premiumInfo" style="display:none; margin-top:15px; padding:15px; border:1px solid #ff4757; border-radius:10px; background:#1a1a1a; color:#fff;">
+  <h3 style="margin-bottom:10px; color:#ff6b81;">💎 Premium Detailed Report</h3>
+  <p style="margin-bottom:8px; font-size:1rem;">
+    Get a <strong>deep analysis report</strong> with historical malware lookup, advanced insights, and developer API access.
+  </p>
+  <p style="margin-bottom:8px; font-size:1.1rem;">
+    <strong>Price:</strong> $15 per premium scan
+  </p>
+
+  <!-- Premium Quota -->
+  <p id="premiumQuota" style="margin-top:5px; font-size:0.95rem; color:#ccc;">
+    Loading premium scans remaining today...
+  </p>
+
+  <!-- Premium Checkbox -->
+  <label style="display:block; margin-top:8px; color:#ccc; font-size:0.95rem; cursor:pointer;">
+    <input type="checkbox" id="premiumOption" style="margin-right:6px;"> I want the Premium Scan (manual payment)
+  </label>
+
+  <button id="premiumPayBtn" style="margin-top:10px; padding:6px 12px; background:#ff6b81; color:white; border:none; border-radius:5px; cursor:pointer;">
+    Pay & Unlock
+  </button>
+</div>
 </div>
 
     </form>
@@ -458,141 +463,143 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     </p>
   </footer>
 
-  <script>
-  // -----------------------------
-  // Quota Update
-  // -----------------------------
-  let scanAttempted = false; // Flag to track if user tried a scan
+<script>
+let scanAttempted = false; // Tracks if user tried a scan
 
-   async function updateQuota() {
-  const q = document.getElementById('freeQuota'); // updated to freeQuota
+// -----------------------------
+// Update quota dynamically
+// -----------------------------
+async function updateQuota() {
   try {
     const res = await fetch('/scan-stats');
     const data = await res.json();
 
+    // Free quota display
+    const freeQuotaEl = document.getElementById('freeQuota');
     if (data.free_scans_remaining > 0) {
-      q.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today`;
+      freeQuotaEl.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today`;
     } else {
-      q.innerHTML = `⚠️ No free scans left. Basic scan costs $1.`;
-      if (scanAttempted) {
-        showPaymentPopup(); // Only show popup if user tried a scan
-      }
+      freeQuotaEl.textContent = `⚠️ No free scans left. Basic scan costs $1.`;
+      if (scanAttempted) showPaymentPopup();
     }
 
-    // Show premium scans info dynamically
-    const premiumElement = document.getElementById('premiumInfo');
-    const premiumQuota = document.getElementById('premiumQuota');
-    if (premiumElement && premiumQuota) {
-      premiumElement.style.display = 'block';
+    // Premium quota display
+    const premiumQuotaEl = document.getElementById('premiumQuota');
+    const premiumInfoEl = document.getElementById('premiumInfo');
+    if (premiumQuotaEl && premiumInfoEl) {
+      premiumInfoEl.style.display = 'block';
       if (data.premium_scans_remaining !== undefined) {
-        premiumQuota.textContent = `🎯 Only ${data.premium_scans_remaining} premium scans remaining today ($15 each)`;
+        premiumQuotaEl.textContent = `🎯 ${data.premium_scans_remaining} premium scans remaining ($15 each)`;
       } else {
-        premiumQuota.textContent = `🎯 Premium detailed scans available for $15`;
+        premiumQuotaEl.textContent = `🎯 Premium detailed scans available for $15`;
       }
     }
 
-  } catch {
-    q.textContent = "⚠️ Unable to load quota.";
+  } catch (err) {
+    document.getElementById('freeQuota').textContent = "⚠️ Unable to load quota.";
+    console.error(err);
   }
 }
 
-// Call this function **only after user clicks "Scan"**
+// Call on user scan attempt
 function onUserScanAttempt() {
   scanAttempted = true;
-  updateQuota(); // Refresh quota and show popup if limit exceeded
+  updateQuota();
 }
 
-updateQuota(); // Initial load updates quota text; popup won't show yet
+// Initial quota load
+updateQuota();
+setInterval(updateQuota, 10000); // refresh every 10 sec
 
+// -----------------------------
+// Poll scan result
+// -----------------------------
+async function pollResult(jobId, btn, email) {
+  try {
+    const res = await fetch(`/scan-result/${jobId}`);
+    const json = await res.json();
 
-  // -----------------------------
-  // Polling Scan Result
-  // -----------------------------
-  async function pollResult(jobId, btn, email) {
-    try {
-      const res = await fetch(`/scan-result/${jobId}`);
-      const json = await res.json();
-
-      if (json.status === "pending") {
-        setTimeout(() => pollResult(jobId, btn, email), 3000);
-      } else if (json.status === "done" && json.success) {
-        document.getElementById('loadingSpinner').style.display = "none";
-        document.getElementById('successBox').style.display = "block";
-        document.getElementById('successBox').innerHTML = `✅ Your report has been sent to <strong>${email}</strong>.`;
-        updateQuota();
-        btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
-      } else {
-        document.getElementById('loadingSpinner').style.display = "none";
-        const errorBox = document.getElementById('errorBox');
-        errorBox.style.display = "block";
-        errorBox.textContent = json.error || "Scan failed.";
-        btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
-      }
-
-    } catch {
+    if (json.status === "pending") {
+      setTimeout(() => pollResult(jobId, btn, email), 3000);
+    } else if (json.status === "done" && json.success) {
+      document.getElementById('loadingSpinner').style.display = "none";
+      const successBox = document.getElementById('successBox');
+      successBox.style.display = "block";
+      successBox.innerHTML = `✅ Your report has been sent to <strong>${email}</strong>.`;
+      updateQuota(); // Decrement quota
+      btn.disabled = false;
+      btn.textContent = 'Upload / Submit Link & Scan';
+    } else {
       document.getElementById('loadingSpinner').style.display = "none";
       const errorBox = document.getElementById('errorBox');
       errorBox.style.display = "block";
-      errorBox.textContent = "Error fetching scan results.";
-      btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
+      errorBox.textContent = json.error || "Scan failed.";
+      btn.disabled = false;
+      btn.textContent = 'Upload / Submit Link & Scan';
     }
+  } catch {
+    document.getElementById('loadingSpinner').style.display = "none";
+    const errorBox = document.getElementById('errorBox');
+    errorBox.style.display = "block";
+    errorBox.textContent = "Error fetching scan results.";
+    btn.disabled = false;
+    btn.textContent = 'Upload / Submit Link & Scan';
   }
+}
 
-  // -----------------------------
-  // Scan Form Submit
-  // -----------------------------
-  document.getElementById('scanForm').addEventListener('submit', async e => {
+// -----------------------------
+// Scan form submission
+// -----------------------------
+document.getElementById('scanForm').addEventListener('submit', async e => {
   e.preventDefault();
-  onUserScanAttempt(); // <-- add this here
+  onUserScanAttempt();
 
   const fd = new FormData(e.target);
-  // ... rest of your scan logic
+  const premiumCheckbox = document.getElementById('premiumOption');
+  if (premiumCheckbox && premiumCheckbox.checked) fd.append('premium', 'true');
 
-    // Optional premium request
-    const premiumCheckbox = document.getElementById('premiumOption');
-    if (premiumCheckbox && premiumCheckbox.checked) {
-      fd.append('premium', 'true');
+  const btn = e.target.querySelector('button');
+  btn.disabled = true;
+  btn.textContent = 'Uploading...';
+  document.getElementById('successBox').style.display = "none";
+  document.getElementById('errorBox').style.display = "none";
+  document.getElementById('loadingSpinner').style.display = "block";
+
+  try {
+    const res = await fetch('/scan-async', { method: 'POST', body: fd });
+    const json = await res.json();
+
+    if (json.error && json.payment_required) {
+      // Free or premium limit reached → show payment popup
+      document.getElementById('loadingSpinner').style.display = "none";
+      showPaymentPopup();
+      btn.disabled = false;
+      btn.textContent = 'Upload / Submit Link & Scan';
+      return;
     }
 
-    const btn = e.target.querySelector('button');
-    btn.disabled = true; btn.textContent = 'Uploading...';
-    document.getElementById('successBox').style.display = "none";
-    document.getElementById('errorBox').style.display = "none";
-    document.getElementById('loadingSpinner').style.display = "block";
-
-    try {
-      const res = await fetch('/scan-async', { method: 'POST', body: fd });
-      const json = await res.json();
-
-      // Free quota reached → trigger payment
-      if (json.error && json.error.includes("free limit")) {
-        document.getElementById('loadingSpinner').style.display = "none";
-        showPaymentPopup();
-        btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
-        return;
-      }
-
-      if (json.job_id) {
-        const email = fd.get("email");
-        pollResult(json.job_id, btn, email);
-        if (premiumCheckbox) premiumCheckbox.checked = false; // reset
-        updateQuota();
-      } else {
-        document.getElementById('loadingSpinner').style.display = "none";
-        const errorBox = document.getElementById('errorBox');
-        errorBox.style.display = "block";
-        errorBox.textContent = json.error || 'Scan failed';
-        btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
-      }
-
-    } catch {
+    if (json.job_id) {
+      const email = fd.get("email");
+      pollResult(json.job_id, btn, email);
+      if (premiumCheckbox) premiumCheckbox.checked = false; // reset
+      updateQuota();
+    } else {
       document.getElementById('loadingSpinner').style.display = "none";
       const errorBox = document.getElementById('errorBox');
       errorBox.style.display = "block";
-      errorBox.textContent = 'Upload failed';
-      btn.disabled = false; btn.textContent = 'Upload / Submit Link & Scan';
+      errorBox.textContent = json.error || 'Scan failed';
+      btn.disabled = false;
+      btn.textContent = 'Upload / Submit Link & Scan';
     }
-  });
+  } catch {
+    document.getElementById('loadingSpinner').style.display = "none";
+    const errorBox = document.getElementById('errorBox');
+    errorBox.style.display = "block";
+    errorBox.textContent = 'Upload failed';
+    btn.disabled = false;
+    btn.textContent = 'Upload / Submit Link & Scan';
+  }
+});
 
   // -----------------------------
   // Newsletter Form Submit
@@ -615,36 +622,34 @@ updateQuota(); // Initial load updates quota text; popup won't show yet
   });
 
   // -----------------------------
-  // 💳 Payment Popup Functions
-  // -----------------------------
-  function showPaymentPopup() {
-    document.getElementById('paymentPopup').style.display = 'flex';
-  }
+// Payment popup functions
+// -----------------------------
+function showPaymentPopup() {
+  document.getElementById('paymentPopup').style.display = 'flex';
+}
+function completePayment() {
+  window.location.href = "https://www.apkscannerpro.com/thank-you";
+}
 
-  function completePayment() {
-    window.location.href = "https://www.apkscannerpro.com/thank-you";
-  }
+// -----------------------------
+// Auto trigger payment when premium checkbox clicked
+// -----------------------------
+const premiumOption = document.getElementById('premiumOption');
+if (premiumOption) {
+  premiumOption.addEventListener('change', function () {
+    if (this.checked) showPaymentPopup();
+  });
+}
 
-  // -----------------------------
-  // Auto trigger payment when premium checkbox clicked
-  // -----------------------------
-  const premiumOption = document.getElementById('premiumOption');
-  if (premiumOption) {
-    premiumOption.addEventListener('change', function () {
-      if (this.checked) showPaymentPopup();
-    });
-  }
-
-  // -----------------------------
-  // Premium Pay Button on homepage
-  // -----------------------------
-  const premiumPayBtn = document.getElementById('premiumPayBtn');
-  if (premiumPayBtn) {
-    premiumPayBtn.addEventListener('click', () => showPaymentPopup());
-  }
+// Premium Pay Button
+const premiumPayBtn = document.getElementById('premiumPayBtn');
+if (premiumPayBtn) {
+  premiumPayBtn.addEventListener('click', () => showPaymentPopup());
+}
 </script>
 </body>
 </html>
+
 
 
 
