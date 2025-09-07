@@ -472,32 +472,35 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 document.addEventListener('DOMContentLoaded', () => {
   let scanAttempted = false;
 
+  // -----------------------------
+  // Update Quotas
+  // -----------------------------
   async function updateQuota() {
     try {
       const res = await fetch('/scan-stats');
       if (!res.ok) throw new Error("Network response was not ok");
       const data = await res.json();
 
-      console.log("Quota data from backend:", data); // debug
+      console.log("Quota data from backend:", data);
 
-      // Main quota (top under "Scan Your APK Online")
+      // Main free quota
       const quotaEl = document.getElementById('quota');
       if (quotaEl && typeof data.free_scans_remaining !== "undefined" && typeof data.free_limit !== "undefined") {
         if (data.free_scans_remaining > 0) {
           quotaEl.textContent = `🎉 You have ${data.free_scans_remaining} of ${data.free_limit} free scans remaining today`;
-          quotaEl.style.color = "#00c6ff"; // blue when available
+          quotaEl.style.color = "#00c6ff";
         } else {
           quotaEl.textContent = "⚠️ No free scans left. Please pay $1 per scan.";
-          quotaEl.style.color = "red"; // red when exhausted
+          quotaEl.style.color = "red";
         }
       }
 
-      // Premium quota (below premium scan section)
+      // Premium quota
       const premiumQuotaEl = document.getElementById('premiumQuota');
       if (premiumQuotaEl && typeof data.premium_scans_remaining !== "undefined" && typeof data.premium_limit !== "undefined") {
         if (data.premium_scans_remaining > 0) {
           premiumQuotaEl.textContent = `🎯 ${data.premium_scans_remaining} of ${data.premium_limit} premium scans left today`;
-          premiumQuotaEl.style.color = "#ff9800"; // gold/orange
+          premiumQuotaEl.style.color = "#ff9800";
         } else {
           premiumQuotaEl.textContent = "⚠️ No premium scans left today. Pay $15 to unlock.";
           premiumQuotaEl.style.color = "red";
@@ -506,13 +509,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (err) {
       console.error("Quota fetch error:", err);
-
       const quotaEl = document.getElementById('quota');
       if (quotaEl) {
         quotaEl.textContent = "⚠️ Unable to load scan quota";
         quotaEl.style.color = "red";
       }
-
       const premiumQuotaEl = document.getElementById('premiumQuota');
       if (premiumQuotaEl) {
         premiumQuotaEl.textContent = "⚠️ Unable to load premium scans";
@@ -523,24 +524,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function onUserScanAttempt() {
     scanAttempted = true;
-    updateQuota(); // refresh immediately after scan
+    updateQuota(); // refresh quota after scan
   }
-
-  // Attach listener to form submit (if scan form exists)
-  const scanForm = document.getElementById('scanForm');
-  if (scanForm) {
-    scanForm.addEventListener('submit', () => {
-      onUserScanAttempt();
-    });
-  }
-
-  // Run once after page load
-  updateQuota();
-
-  // Refresh every 60s
-  setInterval(updateQuota, 60000);
-});
-
 
   // -----------------------------
   // Poll scan result
@@ -558,8 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
         successBox.style.display = "block";
         successBox.innerHTML = `✅ Your report has been sent to <strong>${email}</strong>.`;
 
-        // Update quota AFTER scan success
-        await updateQuota();
+        await updateQuota(); // update quota immediately
 
         btn.disabled = false;
         btn.textContent = 'Upload / Submit Link & Scan';
@@ -587,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const scanForm = document.getElementById('scanForm');
   if (scanForm) {
     scanForm.addEventListener('submit', async e => {
-      e.preventDefault();
+      e.preventDefault(); // ✅ stop reload
       onUserScanAttempt();
 
       const fd = new FormData(e.target);
@@ -599,15 +583,14 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.textContent = 'Uploading...';
       document.getElementById('successBox').style.display = "none";
       document.getElementById('errorBox').style.display = "none";
-      document.getElementById('loadingSpinner').style.display = "block";
+      document.getElementById('loadingSpinner').style.display = "block"; // ✅ show spinner
 
       try {
         const res = await fetch('/scan-async', { method: 'POST', body: fd });
         const json = await res.json();
 
         if (json.error && json.payment_required) {
-          // Free or premium limit reached → show payment popup
-          document.getElementById('loadingSpinner').style.display = "none";
+          document.getElementById('loadingSpinner').style.display = "none"; // hide spinner
           showPaymentPopup();
           btn.disabled = false;
           btn.textContent = 'Upload / Submit Link & Scan';
@@ -616,8 +599,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (json.job_id) {
           const email = fd.get("email");
+          // keep spinner visible until poll finishes
           pollResult(json.job_id, btn, email);
-          if (premiumCheckbox) premiumCheckbox.checked = false; // reset
+          if (premiumCheckbox) premiumCheckbox.checked = false;
         } else {
           document.getElementById('loadingSpinner').style.display = "none";
           const errorBox = document.getElementById('errorBox');
@@ -639,34 +623,34 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // -----------------------------
-  // Initial quota load & refresh every 10 sec
+  // Newsletter form submit
+  // -----------------------------
+  const newsletterForm = document.getElementById('newsletterForm');
+  if (newsletterForm) {
+    newsletterForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      try {
+        const res = await fetch('/subscribe', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (json.ok) {
+          alert('🎉 Subscribed successfully!');
+          e.target.reset();
+        } else {
+          alert(json.error || 'Subscribe failed');
+        }
+      } catch {
+        alert('⚠️ Network error. Please try again.');
+      }
+    });
+  }
+
+  // -----------------------------
+  // Initial quota load + refresh
   // -----------------------------
   updateQuota();
   setInterval(updateQuota, 10000);
-
-  // Expose scan attempt function globally
-  window.onUserScanAttempt = onUserScanAttempt;
 });
-
-  // -----------------------------
-  // Newsletter Form Submit
-  // -----------------------------
-  document.getElementById('newsletterForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    try {
-      const res = await fetch('/subscribe', { method: 'POST', body: fd });
-      const json = await res.json();
-      if (json.ok) {
-        alert('🎉 Subscribed successfully!');
-        e.target.reset();
-      } else {
-        alert(json.error || 'Subscribe failed');
-      }
-    } catch {
-      alert('⚠️ Network error. Please try again.');
-    }
-  });
 
   // -----------------------------
 // Payment popup functions
@@ -696,6 +680,7 @@ if (premiumPayBtn) {
 </script>
 </body>
 </html>
+
 
 
 
