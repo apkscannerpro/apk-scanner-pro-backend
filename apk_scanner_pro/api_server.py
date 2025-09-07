@@ -474,10 +474,10 @@ def scan_async():
     FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
 
     if used >= FREE_LIMIT:
-    return jsonify({
-        "error": "Daily free scan limit reached.",
-        "payment_required": True
-    }), 403
+        return jsonify({
+            "error": "Daily free scan limit reached.",
+            "payment_required": True
+        }), 403
 
     json_body = request.get_json(silent=True) or {}
     form = request.form or {}
@@ -575,6 +575,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
