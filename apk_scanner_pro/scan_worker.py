@@ -98,18 +98,41 @@ def _fetch_existing_file_report(file_hash):
     return {"status": "error", "message": f"Failed to fetch existing report: {resp.status_code}"}
 
 
-def scan_apk(file_path):
-    """Scan uploaded APK file with VirusTotal + AI."""
+def scan_apk(file_path, premium=False):
+    """Scan uploaded APK file with VirusTotal + AI, enforce free/premium quota."""
     try:
         if not VIRUSTOTAL_API_KEY:
             return {"status": "error", "message": "VirusTotal API key missing."}
 
+        # --- Free scan quota enforcement ---
+        scans_file = os.path.join(os.path.dirname(__file__), "scans.json")
+        scans_data = {}
+        if os.path.exists(scans_file):
+            try:
+                with open(scans_file, "r") as f:
+                    scans_data = json.load(f)
+            except Exception:
+                scans_data = {}
+
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+        free_scans_today = scans_data.get(today, 0)
+
+        if not premium and free_scans_today >= 200:
+            return {"status": "error", "message": "Free scan limit reached. Upgrade to premium to continue."}
+
+        # Increment counter if free scan
+        if not premium:
+            scans_data[today] = free_scans_today + 1
+            with open(scans_file, "w") as f:
+                json.dump(scans_data, f)
+
+        # --- Upload to VT ---
         with open(file_path, "rb") as f:
             files = {"file": (os.path.basename(file_path), f)}
             vt_resp = requests.post(VT_SCAN_URL, headers=VT_HEADERS, files=files)
 
+        # --- Handle duplicate ---
         if vt_resp.status_code == 409:
-            # Duplicate file, fetch by hash
             file_hash = vt_resp.json().get("error", {}).get("sha256") or vt_resp.json().get("error", {}).get("additional_info")
             if file_hash:
                 return _fetch_existing_file_report(file_hash)
@@ -136,16 +159,38 @@ def scan_apk(file_path):
         return {"status": "error", "message": f"Exception in scan_apk: {str(e)}"}
 
 
-def scan_url(target_url):
-    """Scan Play Store link or any URL via VirusTotal + AI."""
+
+def scan_url(target_url, premium=False):
+    """Scan Play Store link or any URL via VirusTotal + AI, enforce free/premium quota."""
     try:
         if not VIRUSTOTAL_API_KEY:
             return {"status": "error", "message": "VirusTotal API key missing."}
 
-        # Enforce Play Store link check
         if "play.google.com/store/apps/details?id=" not in target_url:
             return {"status": "error", "message": "Only valid Play Store URLs are allowed."}
 
+        # --- Free scan quota enforcement ---
+        scans_file = os.path.join(os.path.dirname(__file__), "scans.json")
+        scans_data = {}
+        if os.path.exists(scans_file):
+            try:
+                with open(scans_file, "r") as f:
+                    scans_data = json.load(f)
+            except Exception:
+                scans_data = {}
+
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+        free_scans_today = scans_data.get(today, 0)
+
+        if not premium and free_scans_today >= 200:
+            return {"status": "error", "message": "Free scan limit reached. Upgrade to premium to continue."}
+
+        if not premium:
+            scans_data[today] = free_scans_today + 1
+            with open(scans_file, "w") as f:
+                json.dump(scans_data, f)
+
+        # --- Submit URL to VT ---
         url_resp = requests.post(VT_URL_SCAN, headers=VT_HEADERS, data={"url": target_url})
         if url_resp.status_code not in (200, 202):
             return {"status": "error", "message": f"VT URL submission failed: {url_resp.status_code}", "details": url_resp.text}
@@ -166,3 +211,4 @@ def scan_url(target_url):
 
     except Exception as e:
         return {"status": "error", "message": f"Exception in scan_url: {str(e)}"}
+
