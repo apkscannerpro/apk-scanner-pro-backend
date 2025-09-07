@@ -80,11 +80,21 @@ def reset_if_new_day():
     conn = db_conn()
     c = conn.cursor()
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    row = c.execute("SELECT date FROM quota WHERE id=1").fetchone()
-    if row and row[0] != today:
-        c.execute("UPDATE quota SET date=?, used_free_scans=?, used_premium_scans=? WHERE id=1", (today, 0, 0))
-        conn.commit()
+
+    # Ensure quota row exists
+    c.execute("SELECT id, date FROM quota WHERE id=1")
+    row = c.fetchone()
+
+    if not row:
+        # Insert fresh row if missing
+        c.execute("INSERT INTO quota (id, date, used_free_scans, used_premium_scans) VALUES (1, ?, 0, 0)", (today,))
+    elif row[1] != today:
+        # Reset if new day
+        c.execute("UPDATE quota SET date=?, used_free_scans=0, used_premium_scans=0 WHERE id=1", (today,))
+
+    conn.commit()
     conn.close()
+
 
 def get_used_scans():
     """Return dict with free + premium used scans"""
@@ -94,19 +104,24 @@ def get_used_scans():
     conn.close()
     return {"free": row[0], "premium": row[1]} if row else {"free": 0, "premium": 0}
 
+
 def increment_free_scans(count=1):
+    reset_if_new_day()
     conn = db_conn()
     c = conn.cursor()
     c.execute("UPDATE quota SET used_free_scans = used_free_scans + ? WHERE id=1", (count,))
     conn.commit()
     conn.close()
 
+
 def increment_premium_scans(count=1):
+    reset_if_new_day()
     conn = db_conn()
     c = conn.cursor()
     c.execute("UPDATE quota SET used_premium_scans = used_premium_scans + ? WHERE id=1", (count,))
     conn.commit()
     conn.close()
+
 
 # --- Jobs helpers ---
 def jobs_insert(job_id: str):
@@ -499,27 +514,30 @@ def enforce_https_and_www():
 # -----------------------------
 @app.route("/scan-stats")
 def scan_stats():
-    # Reset counters if a new day
+    # Always make sure quota row exists and reset if new day
     reset_if_new_day()
 
     # Get used scan counts
-    used = get_used_scans()  # returns dict {"free": X, "premium": Y}
-    used_free = used.get("free", 0)
-    used_premium = used.get("premium", 0)
+    used = get_used_scans()  # {"free": X, "premium": Y}
+    used_free = int(used.get("free", 0))
+    used_premium = int(used.get("premium", 0))
 
-    # Daily limits from environment variables
-    FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
-    PREMIUM_LIMIT = int(os.getenv("MAX_PREMIUM_SCANS_PER_DAY", "50"))
+    # Daily limits from environment (fallback to defaults)
+    FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", 200))
+    PREMIUM_LIMIT = int(os.getenv("MAX_PREMIUM_SCANS_PER_DAY", 50))
 
-    # Calculate remaining scans (never negative)
+    # Remaining scans (never below zero)
     free_remaining = max(0, FREE_LIMIT - used_free)
     premium_remaining = max(0, PREMIUM_LIMIT - used_premium)
 
-    # Return consistent JSON
+    # Return JSON payload for frontend
     return jsonify({
+        "status": "ok",
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "free_scans_remaining": free_remaining,
-        "scan_count_today": used_free,
         "premium_scans_remaining": premium_remaining,
+        "used_free_scans": used_free,
+        "used_premium_scans": used_premium,
         "free_limit": FREE_LIMIT,
         "premium_limit": PREMIUM_LIMIT
     })
@@ -686,6 +704,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
