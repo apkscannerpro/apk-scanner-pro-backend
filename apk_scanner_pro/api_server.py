@@ -384,6 +384,16 @@ def refund_policy():
 def thank_you():
     return render_template("thank-you.html")
 
+@app.route("/paid-scan", methods=["POST"])
+def paid_scan():
+    """
+    Called after manual payment confirmation (frontend thank-you redirect).
+    Increments quota by +1 so the user can scan again.
+    """
+    increment_scans(1)
+    return jsonify({"ok": True, "message": "Paid scan unlocked"})
+
+
 # Robots.txt (served dynamically)
 @app.route("/robots.txt")
 def robots_txt():
@@ -464,11 +474,10 @@ def scan_async():
     FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
 
     if used >= FREE_LIMIT:
-        return jsonify({
-            "error": "Daily free scan limit reached.",
-            "payment_required": True,
-            "paddle_checkout_link": os.getenv("PADDLE_CHECKOUT_LINK")
-        }), 403
+    return jsonify({
+        "error": "Daily free scan limit reached.",
+        "payment_required": True
+    }), 403
 
     json_body = request.get_json(silent=True) or {}
     form = request.form or {}
@@ -566,6 +575,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
