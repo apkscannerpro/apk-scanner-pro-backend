@@ -50,12 +50,17 @@ def init_db():
         CREATE TABLE IF NOT EXISTS quota (
             id INTEGER PRIMARY KEY,
             date TEXT,
-            used_scans INTEGER
+            used_free_scans INTEGER,
+            used_premium_scans INTEGER
         )
     """)
+    # Initialize row if empty
     if c.execute("SELECT COUNT(*) FROM quota").fetchone()[0] == 0:
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        c.execute("INSERT INTO quota (id, date, used_scans) VALUES (1, ?, 0)", (today,))
+        c.execute(
+            "INSERT INTO quota (id, date, used_free_scans, used_premium_scans) VALUES (1, ?, 0, 0)",
+            (today,)
+        )
     # Jobs
     c.execute("""
         CREATE TABLE IF NOT EXISTS jobs (
@@ -77,21 +82,29 @@ def reset_if_new_day():
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     row = c.execute("SELECT date FROM quota WHERE id=1").fetchone()
     if row and row[0] != today:
-        c.execute("UPDATE quota SET date=?, used_scans=? WHERE id=1", (today, 0))
+        c.execute("UPDATE quota SET date=?, used_free_scans=?, used_premium_scans=? WHERE id=1", (today, 0, 0))
         conn.commit()
     conn.close()
 
 def get_used_scans():
+    """Return dict with free + premium used scans"""
     conn = db_conn()
     c = conn.cursor()
-    used = c.execute("SELECT used_scans FROM quota WHERE id=1").fetchone()[0]
+    row = c.execute("SELECT used_free_scans, used_premium_scans FROM quota WHERE id=1").fetchone()
     conn.close()
-    return used
+    return {"free": row[0], "premium": row[1]} if row else {"free": 0, "premium": 0}
 
-def increment_scans(count=1):
+def increment_free_scans(count=1):
     conn = db_conn()
     c = conn.cursor()
-    c.execute("UPDATE quota SET used_scans = used_scans + ? WHERE id=1", (count,))
+    c.execute("UPDATE quota SET used_free_scans = used_free_scans + ? WHERE id=1", (count,))
+    conn.commit()
+    conn.close()
+
+def increment_premium_scans(count=1):
+    conn = db_conn()
+    c = conn.cursor()
+    c.execute("UPDATE quota SET used_premium_scans = used_premium_scans + ? WHERE id=1", (count,))
     conn.commit()
     conn.close()
 
@@ -489,22 +502,23 @@ def scan_stats():
     # Reset counters if a new day
     reset_if_new_day()
 
-    # Get used scan counts, default to 0
-    used = get_used_scans() or 0
-    premium_used = get_used_premium_scans() or 0
+    # Get used scan counts
+    used = get_used_scans()  # returns dict {"free": X, "premium": Y}
+    used_free = used.get("free", 0)
+    used_premium = used.get("premium", 0)
 
     # Daily limits from environment variables
     FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
     PREMIUM_LIMIT = int(os.getenv("MAX_PREMIUM_SCANS_PER_DAY", "50"))
 
     # Calculate remaining scans (never negative)
-    free_remaining = max(0, FREE_LIMIT - used)
-    premium_remaining = max(0, PREMIUM_LIMIT - premium_used)
+    free_remaining = max(0, FREE_LIMIT - used_free)
+    premium_remaining = max(0, PREMIUM_LIMIT - used_premium)
 
     # Return consistent JSON
     return jsonify({
         "free_scans_remaining": free_remaining,
-        "scan_count_today": used,
+        "scan_count_today": used_free,
         "premium_scans_remaining": premium_remaining,
         "free_limit": FREE_LIMIT,
         "premium_limit": PREMIUM_LIMIT
@@ -518,8 +532,9 @@ def scan_async():
         reset_if_new_day()
 
         # Fetch used counters
-        used = get_used_scans() or 0
-        premium_used = get_used_premium_scans() or 0
+        used = get_used_scans()  # {"free": X, "premium": Y}
+        used_free = used.get("free", 0)
+        used_premium = used.get("premium", 0)
 
         FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
         PREMIUM_LIMIT = int(os.getenv("MAX_PREMIUM_SCANS_PER_DAY", "50"))
@@ -554,14 +569,14 @@ def scan_async():
         # Check quotas
         # -----------------------------
         if premium:
-            if premium_used >= PREMIUM_LIMIT:
+            if used_premium >= PREMIUM_LIMIT:
                 return jsonify({
                     "error": "Daily premium scan limit reached.",
                     "payment_required": True,
                     "premium": True
                 }), 403
         else:
-            if used >= FREE_LIMIT:
+            if used_free >= FREE_LIMIT:
                 return jsonify({
                     "error": "Daily free scan limit reached. Please pay $1 per scan to continue.",
                     "payment_required": True,
@@ -671,6 +686,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
