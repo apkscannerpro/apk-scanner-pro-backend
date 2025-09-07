@@ -218,6 +218,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     🎉 You have 200 free scans remaining today
   </p>
 
+  <!-- Live Free Quota (auto-updated by JS) -->
+  <p id="quota" 
+     style="font-weight:bold; font-size:1.1rem; margin:8px 0; color:#00c6ff; text-align:center;">
+    Loading scan quota...
+  </p>
+
   <!-- Upload Form -->
   <form id="scanForm">
     <input type="file" id="apkInput" name="apk" accept=".apk" class="input"><br>
@@ -474,50 +480,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
       console.log("Quota data from backend:", data); // debug
 
-      // Main quota placeholder (top of section)
+      // Main quota (top under "Scan Your APK Online")
       const quotaEl = document.getElementById('quota');
       if (quotaEl && typeof data.free_scans_remaining !== "undefined" && typeof data.free_limit !== "undefined") {
         if (data.free_scans_remaining > 0) {
-          quotaEl.textContent = `🎉 ${data.free_scans_remaining} of ${data.free_limit} free scans left today`;
+          quotaEl.textContent = `🎉 You have ${data.free_scans_remaining} of ${data.free_limit} free scans remaining today`;
+          quotaEl.style.color = "#00c6ff"; // blue when available
         } else {
           quotaEl.textContent = "⚠️ No free scans left. Please pay $1 per scan.";
+          quotaEl.style.color = "red"; // red when exhausted
         }
       }
 
-      // Free quota (inside info box)
-      const freeQuotaEl = document.getElementById('freeQuota');
-      if (freeQuotaEl && typeof data.free_scans_remaining !== "undefined" && typeof data.free_limit !== "undefined") {
-        if (data.free_scans_remaining > 0) {
-          freeQuotaEl.textContent = `🎉 ${data.free_scans_remaining} of ${data.free_limit} free scans left today`;
-        } else {
-          freeQuotaEl.textContent = "⚠️ No free scans left. Please pay $1 per scan.";
-        }
-      }
-
-      // Premium quota
+      // Premium quota (below premium scan section)
       const premiumQuotaEl = document.getElementById('premiumQuota');
-      const premiumInfoEl = document.getElementById('premiumInfo');
-      if (premiumQuotaEl && premiumInfoEl) {
-        premiumInfoEl.style.display = 'block'; // always show
-        if (typeof data.premium_scans_remaining !== "undefined" && typeof data.premium_limit !== "undefined") {
-          premiumQuotaEl.textContent = `🎯 ${data.premium_scans_remaining} of ${data.premium_limit} premium scans left`;
+      if (premiumQuotaEl && typeof data.premium_scans_remaining !== "undefined" && typeof data.premium_limit !== "undefined") {
+        if (data.premium_scans_remaining > 0) {
+          premiumQuotaEl.textContent = `🎯 ${data.premium_scans_remaining} of ${data.premium_limit} premium scans left today`;
+          premiumQuotaEl.style.color = "#ff9800"; // gold/orange
         } else {
-          premiumQuotaEl.textContent = "🎯 Premium detailed scans available for $15 each";
+          premiumQuotaEl.textContent = "⚠️ No premium scans left today. Pay $15 to unlock.";
+          premiumQuotaEl.style.color = "red";
         }
       }
+
     } catch (err) {
       console.error("Quota fetch error:", err);
 
       const quotaEl = document.getElementById('quota');
-      if (quotaEl) quotaEl.textContent = "⚠️ Unable to load scan quota";
+      if (quotaEl) {
+        quotaEl.textContent = "⚠️ Unable to load scan quota";
+        quotaEl.style.color = "red";
+      }
 
-      const freeQuotaEl = document.getElementById('freeQuota');
       const premiumQuotaEl = document.getElementById('premiumQuota');
-      if (freeQuotaEl) freeQuotaEl.textContent = "⚠️ Unable to load free scans";
-      if (premiumQuotaEl) premiumQuotaEl.textContent = "⚠️ Unable to load premium scans";
-
-      const premiumInfoEl = document.getElementById('premiumInfo');
-      if (premiumInfoEl) premiumInfoEl.style.display = 'block';
+      if (premiumQuotaEl) {
+        premiumQuotaEl.textContent = "⚠️ Unable to load premium scans";
+        premiumQuotaEl.style.color = "red";
+      }
     }
   }
 
@@ -526,7 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateQuota(); // refresh immediately after scan
   }
 
-  // Attach listener to form submit
+  // Attach listener to form submit (if scan form exists)
   const scanForm = document.getElementById('scanForm');
   if (scanForm) {
     scanForm.addEventListener('submit', () => {
@@ -537,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Run once after page load
   updateQuota();
 
-  // Optional: refresh every 60s
+  // Refresh every 60s
   setInterval(updateQuota, 60000);
 });
 
@@ -696,6 +696,7 @@ if (premiumPayBtn) {
 </script>
 </body>
 </html>
+
 
 
 
