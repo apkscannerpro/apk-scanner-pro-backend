@@ -465,10 +465,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  let scanAttempted = false; // Tracks if user tried a scan
+  let scanAttempted = false; // Tracks if user clicked Scan
 
   // -----------------------------
-  // Update quota dynamically
+  // Update quota dynamically from backend
   // -----------------------------
   async function updateQuota() {
     try {
@@ -477,11 +477,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Free quota display
       const freeQuotaEl = document.getElementById('freeQuota');
-      if (freeQuotaEl) {
-        if (data.free_scans_remaining !== undefined) {
+      if (freeQuotaEl && data.free_scans_remaining !== undefined) {
+        if (data.free_scans_remaining > 0) {
           freeQuotaEl.textContent = `🎉 ${data.free_scans_remaining} free scans remaining today`;
         } else {
-          freeQuotaEl.textContent = `⚠️ Unable to load free scans`;
+          freeQuotaEl.textContent = `⚠️ No free scans left. Basic scan costs $1.`;
+          if (scanAttempted) showPaymentPopup(); // Only show popup if user tried a scan
         }
       }
 
@@ -496,12 +497,6 @@ document.addEventListener('DOMContentLoaded', () => {
           premiumQuotaEl.textContent = `🎯 Premium detailed scans available for $15`;
         }
       }
-
-      // If free scans exhausted and user tried a scan, show payment popup
-      if (data.free_scans_remaining === 0 && scanAttempted) {
-        showPaymentPopup();
-      }
-
     } catch (err) {
       console.error(err);
       const freeQuotaEl = document.getElementById('freeQuota');
@@ -511,110 +506,117 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Call on user scan attempt
+  // -----------------------------
+  // Call when user clicks Scan
+  // -----------------------------
   function onUserScanAttempt() {
     scanAttempted = true;
-    updateQuota();
   }
 
-  // Initial quota load immediately
-  updateQuota();
+  // -----------------------------
+  // Poll scan result
+  // -----------------------------
+  async function pollResult(jobId, btn, email) {
+    try {
+      const res = await fetch(`/scan-result/${jobId}`);
+      const json = await res.json();
 
-  // Refresh quotas every 10 seconds
+      if (json.status === "pending") {
+        setTimeout(() => pollResult(jobId, btn, email), 3000);
+      } else if (json.status === "done" && json.success) {
+        document.getElementById('loadingSpinner').style.display = "none";
+        const successBox = document.getElementById('successBox');
+        successBox.style.display = "block";
+        successBox.innerHTML = `✅ Your report has been sent to <strong>${email}</strong>.`;
+
+        // Update quota AFTER scan success
+        await updateQuota();
+
+        btn.disabled = false;
+        btn.textContent = 'Upload / Submit Link & Scan';
+      } else {
+        document.getElementById('loadingSpinner').style.display = "none";
+        const errorBox = document.getElementById('errorBox');
+        errorBox.style.display = "block";
+        errorBox.textContent = json.error || "Scan failed.";
+        btn.disabled = false;
+        btn.textContent = 'Upload / Submit Link & Scan';
+      }
+    } catch {
+      document.getElementById('loadingSpinner').style.display = "none";
+      const errorBox = document.getElementById('errorBox');
+      errorBox.style.display = "block";
+      errorBox.textContent = "Error fetching scan results.";
+      btn.disabled = false;
+      btn.textContent = 'Upload / Submit Link & Scan';
+    }
+  }
+
+  // -----------------------------
+  // Scan form submission
+  // -----------------------------
+  const scanForm = document.getElementById('scanForm');
+  if (scanForm) {
+    scanForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      onUserScanAttempt();
+
+      const fd = new FormData(e.target);
+      const premiumCheckbox = document.getElementById('premiumOption');
+      if (premiumCheckbox && premiumCheckbox.checked) fd.append('premium', 'true');
+
+      const btn = e.target.querySelector('button');
+      btn.disabled = true;
+      btn.textContent = 'Uploading...';
+      document.getElementById('successBox').style.display = "none";
+      document.getElementById('errorBox').style.display = "none";
+      document.getElementById('loadingSpinner').style.display = "block";
+
+      try {
+        const res = await fetch('/scan-async', { method: 'POST', body: fd });
+        const json = await res.json();
+
+        if (json.error && json.payment_required) {
+          // Free or premium limit reached → show payment popup
+          document.getElementById('loadingSpinner').style.display = "none";
+          showPaymentPopup();
+          btn.disabled = false;
+          btn.textContent = 'Upload / Submit Link & Scan';
+          return;
+        }
+
+        if (json.job_id) {
+          const email = fd.get("email");
+          pollResult(json.job_id, btn, email);
+          if (premiumCheckbox) premiumCheckbox.checked = false; // reset
+        } else {
+          document.getElementById('loadingSpinner').style.display = "none";
+          const errorBox = document.getElementById('errorBox');
+          errorBox.style.display = "block";
+          errorBox.textContent = json.error || 'Scan failed';
+          btn.disabled = false;
+          btn.textContent = 'Upload / Submit Link & Scan';
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('loadingSpinner').style.display = "none";
+        const errorBox = document.getElementById('errorBox');
+        errorBox.style.display = "block";
+        errorBox.textContent = 'Upload failed';
+        btn.disabled = false;
+        btn.textContent = 'Upload / Submit Link & Scan';
+      }
+    });
+  }
+
+  // -----------------------------
+  // Initial quota load & refresh every 10 sec
+  // -----------------------------
+  updateQuota();
   setInterval(updateQuota, 10000);
-  
+
   // Expose scan attempt function globally
   window.onUserScanAttempt = onUserScanAttempt;
-});
-
-// -----------------------------
-// Poll scan result
-// -----------------------------
-async function pollResult(jobId, btn, email) {
-  try {
-    const res = await fetch(`/scan-result/${jobId}`);
-    const json = await res.json();
-
-    if (json.status === "pending") {
-      setTimeout(() => pollResult(jobId, btn, email), 3000);
-    } else if (json.status === "done" && json.success) {
-      document.getElementById('loadingSpinner').style.display = "none";
-      const successBox = document.getElementById('successBox');
-      successBox.style.display = "block";
-      successBox.innerHTML = `✅ Your report has been sent to <strong>${email}</strong>.`;
-      updateQuota(); // Decrement quota
-      btn.disabled = false;
-      btn.textContent = 'Upload / Submit Link & Scan';
-    } else {
-      document.getElementById('loadingSpinner').style.display = "none";
-      const errorBox = document.getElementById('errorBox');
-      errorBox.style.display = "block";
-      errorBox.textContent = json.error || "Scan failed.";
-      btn.disabled = false;
-      btn.textContent = 'Upload / Submit Link & Scan';
-    }
-  } catch {
-    document.getElementById('loadingSpinner').style.display = "none";
-    const errorBox = document.getElementById('errorBox');
-    errorBox.style.display = "block";
-    errorBox.textContent = "Error fetching scan results.";
-    btn.disabled = false;
-    btn.textContent = 'Upload / Submit Link & Scan';
-  }
-}
-
-// -----------------------------
-// Scan form submission
-// -----------------------------
-document.getElementById('scanForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  onUserScanAttempt();
-
-  const fd = new FormData(e.target);
-  const premiumCheckbox = document.getElementById('premiumOption');
-  if (premiumCheckbox && premiumCheckbox.checked) fd.append('premium', 'true');
-
-  const btn = e.target.querySelector('button');
-  btn.disabled = true;
-  btn.textContent = 'Uploading...';
-  document.getElementById('successBox').style.display = "none";
-  document.getElementById('errorBox').style.display = "none";
-  document.getElementById('loadingSpinner').style.display = "block";
-
-  try {
-    const res = await fetch('/scan-async', { method: 'POST', body: fd });
-    const json = await res.json();
-
-    if (json.error && json.payment_required) {
-      // Free or premium limit reached → show payment popup
-      document.getElementById('loadingSpinner').style.display = "none";
-      showPaymentPopup();
-      btn.disabled = false;
-      btn.textContent = 'Upload / Submit Link & Scan';
-      return;
-    }
-
-    if (json.job_id) {
-      const email = fd.get("email");
-      pollResult(json.job_id, btn, email);
-      if (premiumCheckbox) premiumCheckbox.checked = false; // reset
-      updateQuota();
-    } else {
-      document.getElementById('loadingSpinner').style.display = "none";
-      const errorBox = document.getElementById('errorBox');
-      errorBox.style.display = "block";
-      errorBox.textContent = json.error || 'Scan failed';
-      btn.disabled = false;
-      btn.textContent = 'Upload / Submit Link & Scan';
-    }
-  } catch {
-    document.getElementById('loadingSpinner').style.display = "none";
-    const errorBox = document.getElementById('errorBox');
-    errorBox.style.display = "block";
-    errorBox.textContent = 'Upload failed';
-    btn.disabled = false;
-    btn.textContent = 'Upload / Submit Link & Scan';
-  }
 });
 
   // -----------------------------
@@ -665,6 +667,7 @@ if (premiumPayBtn) {
 </script>
 </body>
 </html>
+
 
 
 
