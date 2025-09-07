@@ -212,8 +212,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <section id="uploadSection">
   <h2>🔍 Scan Your APK Online</h2>
 
-  <!-- Live Free Quota -->
-  <p id="quota" style="font-weight:bold; color:#00c6ff;">Loading scan quota...</p>
+  <!-- Live Free Quota (moved here visibly) -->
+  <p id="quota" 
+     style="font-weight:bold; font-size:1.1rem; margin:8px 0; color:#00c6ff; text-align:center;">
+    🎉 You have 200 free scans remaining today
+  </p>
 
   <!-- Upload Form -->
   <form id="scanForm">
@@ -252,10 +255,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       </tr>
     </table>
 
-    <!-- Free Quota Live Display -->
-    <div id="freeQuota" style="font-weight: bold; margin-top:15px; color:#00c6ff;">
-      🎉 You have <span id="freeQuotaValue">200</span> free scans remaining today
-    </div>
 
     <!-- Premium Info -->
     <div id="premiumInfo" style="margin-top:20px; padding:15px; border:1px solid #ff4757; border-radius:10px; background:#1a1a1a; color:#fff;">
@@ -697,6 +696,7 @@ if (premiumPayBtn) {
 </script>
 </body>
 </html>
+
 
 
 
