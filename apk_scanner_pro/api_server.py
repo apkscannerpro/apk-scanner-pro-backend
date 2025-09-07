@@ -359,20 +359,33 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
     if isinstance(scan_result, dict) and "error" in scan_result:
         return {"error": scan_result.get("error", "Scan failed"), "success": False, "email": user_email}
 
-    increment_scans()
+    # Increment correct counter
+    if premium:
+        increment_premium_scans()
+    else:
+        increment_free_scans()
+
     if user_email:
         # Free scan → basic summary only
         if not premium:
-            email_sent = send_report_via_email(user_email, {"summary": generate_summary(scan_result)}, file_name_or_url=file_name_or_url)
+            email_sent = send_report_via_email(
+                user_email,
+                {"summary": generate_summary(scan_result)},
+                file_name_or_url=file_name_or_url
+            )
         else:
             # Premium → full report
-            email_sent = send_report_via_email(user_email, scan_result, file_name_or_url=file_name_or_url)
+            email_sent = send_report_via_email(
+                user_email,
+                scan_result,
+                file_name_or_url=file_name_or_url
+            )
         
         # Save lead from scan
         _save_lead(name="", email=user_email, source="scan_report")
         return {"success": email_sent, "email": user_email, "premium": premium}
-    return {"success": False, "email": None, "premium": premium}
 
+    return {"success": False, "email": None, "premium": premium}
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False):
     try:
@@ -704,6 +717,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
