@@ -119,8 +119,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- Payment Popup -->
 <div id="paymentPopup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); justify-content:center; align-items:center; z-index:999;">
   <div class="popup-content" style="background:#1a1a1a; padding:2rem; border-radius:10px; text-align:center; max-width:420px;">
-    <h2>💳 Upgrade to Paid Scan</h2>
-    <p>You’ve used all <strong>200 free scans today</strong>. Additional scans cost <strong>$1 each</strong>.</p>
+    <h2 id="paymentTitle">💳 Upgrade to Paid Scan</h2>
+    <p id="paymentMessage">
+      You’ve used all <strong>200 free scans today</strong>. Additional scans cost <strong>$1 each</strong>.
+    </p>
     
     <p style="margin-top:15px; font-size:0.9rem; line-height:1.6; color:#ccc;">
       Please make payment to:<br><br>
@@ -145,7 +147,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     
     <input type="email" id="paidEmail" class="input" placeholder="Your email"><br>
     <input type="text" id="paymentRef" class="input" placeholder="Payment reference / screenshot ID"><br>
-    <button class="btn" onclick="completePayment()">✅ Done, Continue</button>
+    <button id="paymentBtn" class="btn" onclick="completePayment()">✅ Done, Continue</button>
   </div>
 </div>
 
@@ -646,12 +648,34 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(updateQuota, 10000);
 });
 
-  // -----------------------------
+// -----------------------------
 // Payment popup functions
 // -----------------------------
-function showPaymentPopup() {
-  document.getElementById('paymentPopup').style.display = 'flex';
+function showPaymentPopup(isPremium = false) {
+  const popup = document.getElementById('paymentPopup');
+  const title = document.getElementById('paymentTitle');
+  const message = document.getElementById('paymentMessage');
+  const emailInput = document.getElementById('paidEmail');
+  const refInput = document.getElementById('paymentRef');
+  const paymentBtn = document.getElementById('paymentBtn');
+
+  if (isPremium) {
+    title.textContent = "💳 Premium Scan Payment";
+    message.innerHTML = `You selected a <strong>Premium Scan</strong>. Each premium scan costs <strong>$15</strong>.`;
+    emailInput.placeholder = "Your email for premium report";
+    refInput.placeholder = "Premium payment reference / screenshot ID";
+    paymentBtn.textContent = "✅ Done, Continue with Premium Scan";
+  } else {
+    title.textContent = "💳 Basic Scan Payment";
+    message.innerHTML = `You’ve used all <strong>200 free scans today</strong>. Additional scans cost <strong>$1 each</strong>.`;
+    emailInput.placeholder = "Your email for basic report";
+    refInput.placeholder = "Basic payment reference / screenshot ID";
+    paymentBtn.textContent = "✅ Done, Continue with Basic Scan";
+  }
+
+  popup.style.display = 'flex';
 }
+
 function completePayment() {
   window.location.href = "https://www.apkscannerpro.com/thank-you";
 }
@@ -662,18 +686,19 @@ function completePayment() {
 const premiumOption = document.getElementById('premiumOption');
 if (premiumOption) {
   premiumOption.addEventListener('change', function () {
-    if (this.checked) showPaymentPopup();
+    if (this.checked) showPaymentPopup(true); // ✅ premium mode
   });
 }
 
-// Premium Pay Button
+// Premium Pay Button (for a dedicated button if you have one)
 const premiumPayBtn = document.getElementById('premiumPayBtn');
 if (premiumPayBtn) {
-  premiumPayBtn.addEventListener('click', () => showPaymentPopup());
+  premiumPayBtn.addEventListener('click', () => showPaymentPopup(true));
 }
 </script>
 </body>
 </html>
+
 
 
 
