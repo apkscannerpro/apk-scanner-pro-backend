@@ -695,9 +695,40 @@ const premiumPayBtn = document.getElementById('premiumPayBtn');
 if (premiumPayBtn) {
   premiumPayBtn.addEventListener('click', () => showPaymentPopup(true));
 }
+
+// -----------------------------
+// Handle quota errors dynamically
+// -----------------------------
+async function startScan(formData) {
+  try {
+    const response = await fetch("/scan-async", {
+      method: "POST",
+      body: formData
+    });
+
+    const json = await response.json();
+
+    if (!response.ok && json.payment_required) {
+      // ✅ Show correct popup depending on backend flag
+      showPaymentPopup(json.premium === true);
+      return;
+    }
+
+    if (json.job_id) {
+      console.log("Scan started:", json.job_id);
+      // you can call your job status checker here
+    } else if (json.error) {
+      alert(json.error);
+    }
+  } catch (err) {
+    console.error("Scan error:", err);
+    alert("An error occurred. Please try again.");
+  }
+}
 </script>
 </body>
 </html>
+
 
 
 
