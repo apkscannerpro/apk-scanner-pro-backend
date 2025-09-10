@@ -98,11 +98,15 @@ def _fetch_existing_file_report(file_hash):
     return {"status": "error", "message": f"Failed to fetch existing report: {resp.status_code}"}
 
 
-def scan_apk(file_path, premium=False):
+def scan_apk(file_path, premium=False, payment_ref=None):
     """Scan uploaded APK file with VirusTotal + AI, enforce free/premium quota."""
     try:
         if not VIRUSTOTAL_API_KEY:
             return {"status": "error", "message": "VirusTotal API key missing."}
+
+        # --- Premium enforcement ---
+        if premium and not payment_ref:
+            return {"status": "error", "message": "❌ Premium scans require a valid payment reference."}
 
         # --- Free scan quota enforcement ---
         scans_file = os.path.join(os.path.dirname(__file__), "scans.json")
@@ -160,11 +164,15 @@ def scan_apk(file_path, premium=False):
 
 
 
-def scan_url(target_url, premium=False):
+def scan_url(target_url, premium=False, payment_ref=None):
     """Scan Play Store link or any URL via VirusTotal + AI, enforce free/premium quota."""
     try:
         if not VIRUSTOTAL_API_KEY:
             return {"status": "error", "message": "VirusTotal API key missing."}
+
+        # --- Premium enforcement ---
+        if premium and not payment_ref:
+            return {"status": "error", "message": "❌ Premium scans require a valid payment reference."}
 
         if "play.google.com/store/apps/details?id=" not in target_url:
             return {"status": "error", "message": "Only valid Play Store URLs are allowed."}
@@ -211,4 +219,5 @@ def scan_url(target_url, premium=False):
 
     except Exception as e:
         return {"status": "error", "message": f"Exception in scan_url: {str(e)}"}
+
 
