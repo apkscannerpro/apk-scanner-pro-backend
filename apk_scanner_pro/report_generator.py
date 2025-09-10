@@ -14,6 +14,7 @@ from werkzeug.utils import secure_filename
 import tempfile
 import json
 import csv
+import hashlib
 
 # Import scan functions
 from . import scan_worker
@@ -34,8 +35,15 @@ COMPANY_SUPPORT_EMAIL = "support@apkscannerpro.com"
 def generate_report(scan_result: dict, premium: bool = False) -> str:
     threat_data = str(scan_result)
     if not premium:
-        # Basic report for free scans
-        return f"Basic scan report:\nVerdict: {scan_result.get('verdict','Unknown')}\nMalicious: {scan_result.get('virustotal', {}).get('malicious', 0)}\nSuspicious: {scan_result.get('virustotal', {}).get('suspicious', 0)}"
+        # Enhanced basic report for free scans
+        vt = scan_result.get("virustotal", {})
+        verdict = scan_result.get("verdict", "Unknown")
+        return f"""Free Scan Summary:
+Verdict: {verdict}
+Malicious: {vt.get('malicious', 0)} | Suspicious: {vt.get('suspicious', 0)} | Harmless: {vt.get('harmless', 0)} | Undetected: {vt.get('undetected', 0)}
+
+⚠️ Detailed engine-by-engine results are only available in the Premium Report.
+"""
     
     # Premium AI-enhanced report
     prompt = f"""
@@ -66,9 +74,32 @@ Scan data:
 
 # === Generate short AI summary ===
 def generate_summary(scan_result: dict, premium: bool = False) -> str:
+    vt = scan_result.get("virustotal", {})
+    verdict = scan_result.get("verdict", "Unknown")
+
     if not premium:
-        return f"Verdict: {scan_result.get('verdict','Unknown')} | Malicious: {scan_result.get('virustotal', {}).get('malicious', 0)} | Suspicious: {scan_result.get('virustotal', {}).get('suspicious', 0)}"
+        # Ask AI for a short friendly free-summary
+        prompt = f"""
+Summarize this scan result in 2 short sentences for a non-technical user.
+Make it clear if the file seems safe, suspicious, or harmful.
+
+File: {scan_result.get('file_name','Unknown')}
+Verdict: {verdict}
+Malicious: {vt.get('malicious',0)}, Suspicious: {vt.get('suspicious',0)}, Harmless: {vt.get('harmless',0)}, Undetected: {vt.get('undetected',0)}
+"""
+        try:
+            response = openai.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=80,
+                temperature=0.5
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"❌ OpenAI summary generation failed: {e}")
+            return f"Verdict: {verdict} | Malicious: {vt.get('malicious',0)} | Suspicious: {vt.get('suspicious',0)}"
     
+    # Premium summary
     threat_data = str(scan_result)
     prompt = f"""
 You are a cybersecurity assistant for {COMPANY_NAME}.
@@ -100,10 +131,6 @@ def generate_pdf_report(summary: str, report_text: str, file_name: str = "APK Fi
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=letter)
     pdf.setFont("Helvetica", 11)
-    ...
-    pdf.save()
-    buffer.seek(0)
-    return buffer
 
     y = 770
     pdf.setFont("Helvetica-Bold", 14)
@@ -214,7 +241,15 @@ def send_report_via_email(to_email: str, scan_result: dict, file_name: str = "AP
 
     verdict = scan_result.get("verdict", "Unknown")
     vt_stats = scan_result.get("virustotal", {})
-    ai_summary = scan_result.get("ai", {}).get("ai_summary", "")
+
+    # Build SHA256 if provided
+    sha256 = scan_result.get("sha256", "")
+    if not sha256 and scan_result.get("file_path"):
+        try:
+            with open(scan_result["file_path"], "rb") as f:
+                sha256 = hashlib.sha256(f.read()).hexdigest()
+        except:
+            sha256 = ""
 
     msg = MIMEMultipart()
     msg["From"] = f"{COMPANY_NAME} <{sender_email}>"
@@ -236,20 +271,37 @@ def send_report_via_email(to_email: str, scan_result: dict, file_name: str = "AP
 - 🟠 Suspicious: {vt_stats.get("suspicious", 0)}
 - 🟢 Harmless: {vt_stats.get("harmless", 0)}
 - ⚪ Undetected: {vt_stats.get("undetected", 0)}
-
-━━━━━━━━━━━━━━━━━━━
-📌 Summary
-━━━━━━━━━━━━━━━━━━━
-{summary}
 """
 
-    # Include AI + detailed report & recommendations only for premium scans
+    # === Extra details for FREE scans ===
+    if not premium:
+        plain_body += f"""
+━━━━━━━━━━━━━━━━━━━
+🧾 File Details
+━━━━━━━━━━━━━━━━━━━
+📂 Name: {file_name}
+🔑 SHA256: {sha256 or 'N/A'}
+
+━━━━━━━━━━━━━━━━━━━
+🤖 AI Quick Insight
+━━━━━━━━━━━━━━━━━━━
+{summary}
+
+━━━━━━━━━━━━━━━━━━━
+🛡️ Detailed Report
+━━━━━━━━━━━━━━━━━━━
+Full detailed analysis is available for premium scans only.  
+👉 Upgrade to premium to unlock the complete report.
+
+"""
+
+    # === Premium section ===
     if premium:
         plain_body += f"""
 ━━━━━━━━━━━━━━━━━━━
 🤖 AI Analysis
 ━━━━━━━━━━━━━━━━━━━
-{ai_summary}
+{scan_result.get("ai", {}).get("ai_summary", "")}
 
 ━━━━━━━━━━━━━━━━━━━
 📋 Detailed Report
@@ -345,4 +397,3 @@ def scan():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
