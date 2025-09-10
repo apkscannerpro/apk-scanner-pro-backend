@@ -572,6 +572,7 @@ def scan_async():
         form = request.form or {}
 
         user_email = form.get("email") or json_body.get("email")
+        payment_ref = form.get("payment_ref") or json_body.get("payment_ref")  # ✅ added
         url_param = (form.get("apk_url") or form.get("apk_link") or ""
                      or json_body.get("apk_url") or json_body.get("apk_link") or "").strip()
 
@@ -594,21 +595,29 @@ def scan_async():
             premium = json_body.get("premium") is True
 
         # -----------------------------
-        # Check quotas
+        # Check quotas + enforce payment
         # -----------------------------
         if premium:
+            # ✅ Require email + payment reference before allowing scan
+            if not payment_ref:
+                return jsonify({
+                    "error": "Payment reference is required for premium scans.",
+                    "payment_required": True,
+                    "premium": True
+                }), 403
+
             if used_premium >= PREMIUM_LIMIT:
                 return jsonify({
                     "error": "Daily premium scan limit reached.",
                     "payment_required": True,
-                    "premium": True   # ✅ ensure always returned
+                    "premium": True
                 }), 403
         else:
             if used_free >= FREE_LIMIT:
                 return jsonify({
                     "error": "Daily free scan limit reached. Please pay $1 per scan to continue.",
                     "payment_required": True,
-                    "premium": False  # ✅ ensure always returned
+                    "premium": False
                 }), 403
 
         # -----------------------------
@@ -623,7 +632,8 @@ def scan_async():
                 user_email=user_email,
                 tmp_path=tmp_path,
                 file_name_or_url=filename,
-                premium=premium
+                premium=premium,
+                payment_ref=payment_ref  # ✅ pass forward
             )
         else:
             job_id = _start_job(
@@ -631,11 +641,12 @@ def scan_async():
                 user_email=user_email,
                 url_param=url_param,
                 file_name_or_url=url_param,
-                premium=premium
+                premium=premium,
+                payment_ref=payment_ref  # ✅ pass forward
             )
 
         # -----------------------------
-        # ✅ Increment counters only ONCE here (removed from _finalize_scan)
+        # ✅ Increment counters only ONCE here
         # -----------------------------
         if premium:
             increment_premium_scans()
@@ -644,11 +655,10 @@ def scan_async():
 
         return jsonify({
             "job_id": job_id,
-            "premium": premium   # ✅ always included in success response
+            "premium": premium
         })
 
     except Exception as e:
-        # Catch everything to prevent Internal Server Error
         print(f"Scan async error: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
 
@@ -717,6 +727,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
