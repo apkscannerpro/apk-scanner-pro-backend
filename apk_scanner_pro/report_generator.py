@@ -228,7 +228,18 @@ def add_to_subscribers(email: str, name: str = "", file_name: str = ""):
 
 
 # === Send report via email (Plain Text + PDF) ===
-def send_report_via_email(to_email: str, scan_result: dict, file_name: str = "APK File", premium: bool = False) -> bool:
+    def send_report_via_email(to_email: str, scan_result: dict, file_name: str = "APK File",
+                          premium: bool = False, payment_ref: str = None) -> bool:
+    """
+    Send scan results to the user. Premium reports are only sent if
+    BOTH premium=True AND a valid payment_ref is provided.
+    """
+
+    # 🔒 Enforce premium only with payment_ref
+    if premium and not payment_ref:
+        print(f"⚠️ Premium requested but no payment_ref for {to_email}. Downgrading to free report.")
+        premium = False
+
     # Generate summary & report based on premium flag
     summary = generate_summary(scan_result, premium=premium)
     report_text = generate_report(scan_result, premium=premium)
@@ -365,6 +376,7 @@ def scan():
         apk_url = request.form.get("apk_url")
         file = request.files.get("apk")
         premium_flag = request.form.get("premium", "false").lower() == "true"
+        payment_ref = request.form.get("payment_ref")  # ✅ capture payment_ref
 
         if not email:
             return jsonify({"error": "Email is required"}), 400
@@ -386,14 +398,14 @@ def scan():
         else:
             return jsonify({"error": "No APK file or URL provided"}), 400
 
-        # Send email report (premium or free)
-        send_report_via_email(email, result, file_name, premium=premium_flag)
+        # ✅ Enforce payment_ref when sending
+        send_report_via_email(email, result, file_name,
+                              premium=premium_flag, payment_ref=payment_ref)
 
-        return jsonify({"status": "success", "result": result, "premium": premium_flag})
+        return jsonify({"status": "success", "result": result,
+                        "premium": premium_flag, "payment_ref": payment_ref})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
