@@ -562,61 +562,62 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // -----------------------------
-  // Scan form submission
-  // -----------------------------
-  const scanForm = document.getElementById('scanForm');
-  if (scanForm) {
-    scanForm.addEventListener('submit', async e => {
-      e.preventDefault(); // ✅ stop reload
-      onUserScanAttempt();
+// Scan form submission
+// -----------------------------
+const scanForm = document.getElementById('scanForm');
+if (scanForm) {
+  scanForm.addEventListener('submit', async e => {
+    e.preventDefault(); // ✅ stop reload
+    onUserScanAttempt();
 
-      const fd = new FormData(e.target);
-      const premiumCheckbox = document.getElementById('premiumOption');
-      if (premiumCheckbox && premiumCheckbox.checked) fd.append('premium', 'true');
+    const fd = new FormData(e.target);
+    const premiumCheckbox = document.getElementById('premiumOption');
+    if (premiumCheckbox && premiumCheckbox.checked) fd.append('premium', 'true');
 
-      const btn = e.target.querySelector('button');
-      btn.disabled = true;
-      btn.textContent = 'Uploading...';
-      document.getElementById('successBox').style.display = "none";
-      document.getElementById('errorBox').style.display = "none";
-      document.getElementById('loadingSpinner').style.display = "block"; // ✅ show spinner
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+    btn.textContent = 'Uploading...';
+    document.getElementById('successBox').style.display = "none";
+    document.getElementById('errorBox').style.display = "none";
+    document.getElementById('loadingSpinner').style.display = "block"; // ✅ show spinner
 
-      try {
-        const res = await fetch('/scan-async', { method: 'POST', body: fd });
-        const json = await res.json();
+    try {
+      const res = await fetch('/scan-async', { method: 'POST', body: fd });
+      const json = await res.json();
 
-        if (json.error && json.payment_required) {
-          document.getElementById('loadingSpinner').style.display = "none"; // hide spinner
-          showPaymentPopup();
-          btn.disabled = false;
-          btn.textContent = 'Upload / Submit Link & Scan';
-          return;
-        }
+      if (json.error && json.payment_required) {
+        document.getElementById('loadingSpinner').style.display = "none"; // hide spinner
+        // ✅ Show popup with correct mode depending on backend response
+        showPaymentPopup(json.premium === true);
+        btn.disabled = false;
+        btn.textContent = 'Upload / Submit Link & Scan';
+        return;
+      }
 
-        if (json.job_id) {
-          const email = fd.get("email");
-          // keep spinner visible until poll finishes
-          pollResult(json.job_id, btn, email);
-          if (premiumCheckbox) premiumCheckbox.checked = false;
-        } else {
-          document.getElementById('loadingSpinner').style.display = "none";
-          const errorBox = document.getElementById('errorBox');
-          errorBox.style.display = "block";
-          errorBox.textContent = json.error || 'Scan failed';
-          btn.disabled = false;
-          btn.textContent = 'Upload / Submit Link & Scan';
-        }
-      } catch (err) {
-        console.error(err);
+      if (json.job_id) {
+        const email = fd.get("email");
+        // keep spinner visible until poll finishes
+        pollResult(json.job_id, btn, email);
+        if (premiumCheckbox) premiumCheckbox.checked = false;
+      } else {
         document.getElementById('loadingSpinner').style.display = "none";
         const errorBox = document.getElementById('errorBox');
         errorBox.style.display = "block";
-        errorBox.textContent = 'Upload failed';
+        errorBox.textContent = json.error || 'Scan failed';
         btn.disabled = false;
         btn.textContent = 'Upload / Submit Link & Scan';
       }
-    });
-  }
+    } catch (err) {
+      console.error(err);
+      document.getElementById('loadingSpinner').style.display = "none";
+      const errorBox = document.getElementById('errorBox');
+      errorBox.style.display = "block";
+      errorBox.textContent = 'Upload failed';
+      btn.disabled = false;
+      btn.textContent = 'Upload / Submit Link & Scan';
+    }
+  });
+}
 
   // -----------------------------
   // Newsletter form submit
@@ -728,6 +729,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
