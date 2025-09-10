@@ -601,14 +601,14 @@ def scan_async():
                 return jsonify({
                     "error": "Daily premium scan limit reached.",
                     "payment_required": True,
-                    "premium": True
+                    "premium": True   # ✅ ensure always returned
                 }), 403
         else:
             if used_free >= FREE_LIMIT:
                 return jsonify({
                     "error": "Daily free scan limit reached. Please pay $1 per scan to continue.",
                     "payment_required": True,
-                    "premium": False
+                    "premium": False  # ✅ ensure always returned
                 }), 403
 
         # -----------------------------
@@ -642,7 +642,10 @@ def scan_async():
         else:
             increment_free_scans()
 
-        return jsonify({"job_id": job_id, "premium": premium})
+        return jsonify({
+            "job_id": job_id,
+            "premium": premium   # ✅ always included in success response
+        })
 
     except Exception as e:
         # Catch everything to prevent Internal Server Error
@@ -714,6 +717,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
