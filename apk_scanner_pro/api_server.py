@@ -384,9 +384,9 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
     return {"success": False, "email": None, "premium": premium}
 
 
-def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False):
+def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None):
     try:
-        scan_result = scan_apk_file(tmp_path)
+        scan_result = scan_apk_file(tmp_path, premium=premium, payment_ref=payment_ref)
         return _finalize_scan(scan_result, user_email, file_name_or_url=file_name_or_url, premium=premium)
     finally:
         try:
@@ -396,11 +396,11 @@ def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premiu
             pass
 
 
-def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premium=False):
+def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premium=False, payment_ref=None):
     if is_direct_apk_url(url_param):
         local = download_apk_to_tmp(url_param)
         try:
-            scan_result = scan_apk_file(local)
+            scan_result = scan_apk_file(local, premium=premium, payment_ref=payment_ref)
         finally:
             try:
                 if os.path.exists(local):
@@ -408,8 +408,9 @@ def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premiu
             except Exception:
                 pass
     else:
-        scan_result = scan_url(url_param)
+        scan_result = scan_url(url_param, premium=premium, payment_ref=payment_ref)
     return _finalize_scan(scan_result, user_email, file_name_or_url=file_name_or_url or url_param, premium=premium)
+
 
 
 # -------------------------------------------------------------------------------
@@ -572,7 +573,7 @@ def scan_async():
         form = request.form or {}
 
         user_email = form.get("email") or json_body.get("email")
-        payment_ref = form.get("payment_ref") or json_body.get("payment_ref")  # ✅ added
+        payment_ref = form.get("payment_ref") or json_body.get("payment_ref")  # ✅ keep
         url_param = (form.get("apk_url") or form.get("apk_link") or ""
                      or json_body.get("apk_url") or json_body.get("apk_link") or "").strip()
 
@@ -598,10 +599,10 @@ def scan_async():
         # Check quotas + enforce payment
         # -----------------------------
         if premium:
-            # ✅ Require email + payment reference before allowing scan
-            if not payment_ref:
+            # ✅ Require BOTH email + payment reference before allowing scan
+            if not payment_ref or not user_email:
                 return jsonify({
-                    "error": "Payment reference is required for premium scans.",
+                    "error": "Email and payment reference are required for premium scans.",
                     "payment_required": True,
                     "premium": True
                 }), 403
@@ -633,7 +634,7 @@ def scan_async():
                 tmp_path=tmp_path,
                 file_name_or_url=filename,
                 premium=premium,
-                payment_ref=payment_ref  # ✅ pass forward
+                payment_ref=payment_ref  # ✅ passed forward
             )
         else:
             job_id = _start_job(
@@ -642,7 +643,7 @@ def scan_async():
                 url_param=url_param,
                 file_name_or_url=url_param,
                 premium=premium,
-                payment_ref=payment_ref  # ✅ pass forward
+                payment_ref=payment_ref  # ✅ passed forward
             )
 
         # -----------------------------
@@ -727,6 +728,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
