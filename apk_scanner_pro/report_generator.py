@@ -228,8 +228,13 @@ def add_to_subscribers(email: str, name: str = "", file_name: str = ""):
 
 
 # === Send report via email (Plain Text + PDF) ===
-    def send_report_via_email(to_email: str, scan_result: dict, file_name: str = "APK File",
-                          premium: bool = False, payment_ref: str = None) -> bool:
+def send_report_via_email(
+    to_email: str,
+    scan_result: dict,
+    file_name: str = "APK File",
+    premium: bool = False,
+    payment_ref: str = None
+) -> bool:
     """
     Send scan results to the user. Premium reports are only sent if
     BOTH premium=True AND a valid payment_ref is provided.
@@ -239,6 +244,14 @@ def add_to_subscribers(email: str, name: str = "", file_name: str = ""):
     if premium and not payment_ref:
         print(f"⚠️ Premium requested but no payment_ref for {to_email}. Downgrading to free report.")
         premium = False
+
+    # Generate summary & report based on premium flag
+    summary = generate_summary(scan_result, premium=premium)
+    report_text = generate_report(scan_result, premium=premium)
+    pdf_buffer = (
+        generate_pdf_report(summary, report_text, file_name, scan_result, premium=premium)
+        if premium else None
+    )
 
     # Generate summary & report based on premium flag
     summary = generate_summary(scan_result, premium=premium)
@@ -407,5 +420,6 @@ def scan():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
