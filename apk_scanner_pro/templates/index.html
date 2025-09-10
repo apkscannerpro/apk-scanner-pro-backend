@@ -145,8 +145,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       After transfer, enter your email & payment reference below to continue.
     </p>
     
-    <input type="email" id="paidEmail" class="input" placeholder="Your email"><br>
-    <input type="text" id="paymentRef" class="input" placeholder="Payment reference / screenshot ID"><br>
+    <input type="email" id="paidEmail" class="input" placeholder="Your email" required><br>
+    <input type="text" id="paymentRef" class="input" placeholder="Payment reference / screenshot ID" required><br>
     <button id="paymentBtn" class="btn" onclick="completePayment()">✅ Done, Continue</button>
   </div>
 </div>
@@ -652,6 +652,8 @@ if (scanForm) {
 // -----------------------------
 // Payment popup functions
 // -----------------------------
+let currentPaymentMode = "basic"; // default
+
 function showPaymentPopup(isPremium = false) {
   const popup = document.getElementById('paymentPopup');
   const title = document.getElementById('paymentTitle');
@@ -661,12 +663,14 @@ function showPaymentPopup(isPremium = false) {
   const paymentBtn = document.getElementById('paymentBtn');
 
   if (isPremium) {
+    currentPaymentMode = "premium";
     title.textContent = "💳 Premium Scan Payment";
     message.innerHTML = `You selected a <strong>Premium Scan</strong>. Each premium scan costs <strong>$15</strong>.`;
     emailInput.placeholder = "Your email for premium report";
     refInput.placeholder = "Premium payment reference / screenshot ID";
     paymentBtn.textContent = "✅ Done, Continue with Premium Scan";
   } else {
+    currentPaymentMode = "basic";
     title.textContent = "💳 Basic Scan Payment";
     message.innerHTML = `You’ve used all <strong>200 free scans today</strong>. Additional scans cost <strong>$1 each</strong>.`;
     emailInput.placeholder = "Your email for basic report";
@@ -678,6 +682,20 @@ function showPaymentPopup(isPremium = false) {
 }
 
 function completePayment() {
+  const email = document.getElementById('paidEmail').value.trim();
+  const ref = document.getElementById('paymentRef').value.trim();
+
+  if (!email || !ref) {
+    alert("⚠️ Please enter both your email and payment reference before continuing.");
+    return;
+  }
+
+  // ✅ Store in localStorage so backend can use later
+  localStorage.setItem("paidEmail", email);
+  localStorage.setItem("paymentRef", ref);
+  localStorage.setItem("paymentMode", currentPaymentMode);
+
+  // redirect only after validation
   window.location.href = "https://www.apkscannerpro.com/thank-you";
 }
 
@@ -729,6 +747,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
