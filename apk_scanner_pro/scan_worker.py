@@ -2,6 +2,7 @@ import requests
 import os
 import time
 import json
+import hashlib
 from openai import OpenAI
 from datetime import datetime
 
@@ -99,6 +100,15 @@ def _fetch_existing_file_report(file_hash):
     return {"status": "error", "message": f"Failed to fetch existing report: {resp.status_code}"}
 
 
+def _sha256_file(file_path):
+    """Calculate SHA256 hash of a file (for VT duplicate fetch)."""
+    sha256 = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            sha256.update(chunk)
+    return sha256.hexdigest()
+
+
 def scan_apk_file(file_path, premium=False, payment_ref=None):
     """Scan an uploaded APK file with VirusTotal + AI layer."""
     try:
@@ -115,8 +125,8 @@ def scan_apk_file(file_path, premium=False, payment_ref=None):
             resp = requests.post(VT_SCAN_URL, headers=VT_HEADERS, files=files)
 
         if resp.status_code == 409:
-            # Duplicate file — fetch existing report by hash
-            file_hash = os.path.basename(file_path)
+            # Duplicate file — fetch existing report by actual SHA256
+            file_hash = _sha256_file(file_path)
             return _fetch_existing_file_report(file_hash)
 
         if resp.status_code not in (200, 202):
@@ -203,6 +213,3 @@ def scan_url(target_url, premium=False, payment_ref=None):
 
     except Exception as e:
         return {"status": "error", "message": f"Exception in scan_url: {str(e)}"}
-
-
-
