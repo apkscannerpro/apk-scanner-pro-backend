@@ -750,7 +750,7 @@ if (scanForm) {
 
 
 let currentPaymentMode = "basic"; // "basic" or "premium"
-let pageJustLoaded = true;        // Prevent popup on reload
+let pageJustLoaded = true;
 
 // -----------------------------
 // DOMContentLoaded: Initialize event listeners
@@ -760,13 +760,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const premiumOption = document.getElementById('premiumOption');
   const premiumPayBtn = document.getElementById('premiumPayBtn');
-  let premiumChecked = false;
 
   // ✅ Checkbox triggers premium popup immediately
   if (premiumOption) {
     premiumOption.addEventListener('change', function () {
-      premiumChecked = this.checked;
-      if (premiumChecked) {
+      if (this.checked) {
+        currentPaymentMode = "premium";
         showPaymentPopup(true);
       }
     });
@@ -775,7 +774,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // ✅ Pay & Unlock button logic
   if (premiumPayBtn) {
     premiumPayBtn.addEventListener('click', () => {
-      if (premiumChecked) {
+      if (premiumOption && premiumOption.checked) {
+        currentPaymentMode = "premium";
         showPaymentPopup(true);
       } else {
         alert("⚠️ Please check the 'Unlock Premium Report' box first before proceeding.");
@@ -821,7 +821,7 @@ function hidePaymentPopup() {
 }
 
 // -----------------------------
-// Trigger basic-paid popup (call inside startScan only!)
+// Trigger basic-paid popup (only after free scans exhausted)
 // -----------------------------
 function triggerBasicPaidPopup() {
   if (!pageJustLoaded) {
@@ -895,6 +895,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
