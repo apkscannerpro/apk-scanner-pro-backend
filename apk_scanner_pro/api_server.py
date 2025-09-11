@@ -704,17 +704,16 @@ def scan_async():
             basic_paid = json_body.get("basic_paid") is True
 
         # -----------------------------
-        # Check quotas + enforce payment
+        # Automatic quota handling
         # -----------------------------
         if premium:
-            # ✅ Require BOTH email + payment reference before allowing scan
-            if not payment_ref or not user_email:
+            # Require payment_ref for premium
+            if not payment_ref:
                 return jsonify({
                     "error": "Email and payment reference are required for premium scans.",
                     "payment_required": True,
                     "premium": True
                 }), 403
-
             if used_premium >= PREMIUM_LIMIT:
                 return jsonify({
                     "error": "Daily premium scan limit reached.",
@@ -723,14 +722,9 @@ def scan_async():
                 }), 403
 
         elif basic_paid:
-            # ✅ Paid-basic scans
-            if not payment_ref or not user_email:
-                return jsonify({
-                    "error": "Email and payment reference are required for paid basic scans.",
-                    "payment_required": True,
-                    "basic_paid": True
-                }), 403
-
+            # Paid basic scans
+            if not payment_ref:
+                payment_ref = "basic_paid"
             if used_basic_paid >= BASIC_PAID_LIMIT:
                 return jsonify({
                     "error": "Daily basic paid scan limit reached.",
@@ -739,14 +733,11 @@ def scan_async():
                 }), 403
 
         else:
-            # ✅ Free scans
+            # Free scans
             if used_free >= FREE_LIMIT:
-                return jsonify({
-                    "error": "Daily free scan limit reached. Please pay $1 per scan to continue.",
-                    "payment_required": True,
-                    "premium": False,
-                    "basic_paid": False
-                }), 403
+                # Auto-upgrade to basic-paid
+                basic_paid = True
+                payment_ref = "basic_paid"
 
         # -----------------------------
         # Start scan job
@@ -776,7 +767,7 @@ def scan_async():
             )
 
         # -----------------------------
-        # ✅ Increment counters here
+        # Increment counters
         # -----------------------------
         if premium:
             increment_premium_scans()
@@ -860,6 +851,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
