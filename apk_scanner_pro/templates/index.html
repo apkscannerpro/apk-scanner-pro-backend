@@ -680,41 +680,9 @@ if (scanForm) {
 
 
 // -----------------------------
-// Payment popup functions
-// -----------------------------
-let currentPaymentMode = "basic"; // default
-
-function showPaymentPopup(isPremium = false) {
-  const popup = document.getElementById('paymentPopup');
-  const title = document.getElementById('paymentTitle');
-  const message = document.getElementById('paymentMessage');
-  const emailInput = document.getElementById('paidEmail');
-  const refInput = document.getElementById('paymentRef');
-  const paymentBtn = document.getElementById('paymentBtn');
-
-  if (isPremium) {
-    currentPaymentMode = "premium";
-    title.textContent = "💳 Premium Scan Payment";
-    message.innerHTML = `You selected a <strong>Premium Scan</strong>. Each premium scan costs <strong>$15</strong>.`;
-    emailInput.placeholder = "Your email for premium report";
-    refInput.placeholder = "Premium payment reference / screenshot ID";
-    paymentBtn.textContent = "✅ Done, Continue with Premium Scan";
-  } else {
-    currentPaymentMode = "basic";
-    title.textContent = "💳 Basic Scan Payment";
-    message.innerHTML = `You’ve used all <strong>200 free scans today</strong>. Additional scans cost <strong>$1 each</strong>.`;
-    emailInput.placeholder = "Your email for basic report";
-    refInput.placeholder = "Basic payment reference / screenshot ID";
-    paymentBtn.textContent = "✅ Done, Continue with Basic Scan";
-  }
-
-  popup.style.display = 'flex';
-}
-
-// -----------------------------
 // Complete Payment
 // -----------------------------
-function completePayment() {
+async function completePayment() {
   const email = document.getElementById('paidEmail').value.trim();
   const ref = document.getElementById('paymentRef').value.trim();
 
@@ -735,6 +703,21 @@ function completePayment() {
     textSpan.innerText =
       `✅ Pending payment detected for ${email} (Ref: ${ref}). Complete a scan to use it.`;
     banner.style.display = "block";
+  }
+
+  // 🔥 Call backend to unlock scan immediately
+  try {
+    await fetch("/paid-scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: email,
+        ref: ref,
+        mode: currentPaymentMode
+      })
+    });
+  } catch (err) {
+    console.error("Failed to notify backend about paid scan:", err);
   }
 
   // redirect only after validation
@@ -863,6 +846,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
