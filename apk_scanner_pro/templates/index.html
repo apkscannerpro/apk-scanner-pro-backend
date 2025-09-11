@@ -477,59 +477,62 @@ document.addEventListener('DOMContentLoaded', () => {
   let scanAttempted = false;
 
   // -----------------------------
-  // Update Quotas
-  // -----------------------------
-  async function updateQuota() {
-    try {
-      const res = await fetch('/scan-stats');
-      if (!res.ok) throw new Error("Network response was not ok");
-      const data = await res.json();
+// Update Quotas (safe: no popups here)
+// -----------------------------
+async function updateQuota() {
+  try {
+    const res = await fetch('/scan-stats');
+    if (!res.ok) throw new Error("Network response was not ok");
+    const data = await res.json();
 
-      console.log("Quota data from backend:", data);
+    console.log("Quota data from backend:", data);
 
-      // Main free quota
-      const quotaEl = document.getElementById('quota');
-      if (quotaEl && typeof data.free_scans_remaining !== "undefined" && typeof data.free_limit !== "undefined") {
-        if (data.free_scans_remaining > 0) {
-          quotaEl.textContent = `🎉 You have ${data.free_scans_remaining} of ${data.free_limit} free scans remaining today`;
-          quotaEl.style.color = "#00c6ff";
-        } else {
-          quotaEl.textContent = "⚠️ No free scans left. Please pay $1 per scan.";
-          quotaEl.style.color = "red";
-        }
-      }
-
-      // Premium quota
-      const premiumQuotaEl = document.getElementById('premiumQuota');
-      if (premiumQuotaEl && typeof data.premium_scans_remaining !== "undefined" && typeof data.premium_limit !== "undefined") {
-        if (data.premium_scans_remaining > 0) {
-          premiumQuotaEl.textContent = `🎯 ${data.premium_scans_remaining} of ${data.premium_limit} premium scans left today`;
-          premiumQuotaEl.style.color = "#ff9800";
-        } else {
-          premiumQuotaEl.textContent = "⚠️ No premium scans left today. Pay $15 to unlock.";
-          premiumQuotaEl.style.color = "red";
-        }
-      }
-
-    } catch (err) {
-      console.error("Quota fetch error:", err);
-      const quotaEl = document.getElementById('quota');
-      if (quotaEl) {
-        quotaEl.textContent = "⚠️ Unable to load scan quota";
+    // Main free quota
+    const quotaEl = document.getElementById('quota');
+    if (quotaEl && typeof data.free_scans_remaining !== "undefined" && typeof data.free_limit !== "undefined") {
+      if (data.free_scans_remaining > 0) {
+        quotaEl.textContent = `🎉 You have ${data.free_scans_remaining} of ${data.free_limit} free scans remaining today`;
+        quotaEl.style.color = "#00c6ff";
+      } else {
+        quotaEl.textContent = "⚠️ No free scans left. Please pay $1 per scan.";
         quotaEl.style.color = "red";
-      }
-      const premiumQuotaEl = document.getElementById('premiumQuota');
-      if (premiumQuotaEl) {
-        premiumQuotaEl.textContent = "⚠️ Unable to load premium scans";
-        premiumQuotaEl.style.color = "red";
+        // ✅ DO NOT trigger popup here
       }
     }
-  }
 
-  function onUserScanAttempt() {
-    scanAttempted = true;
-    updateQuota(); // refresh quota after scan
+    // Premium quota
+    const premiumQuotaEl = document.getElementById('premiumQuota');
+    if (premiumQuotaEl && typeof data.premium_scans_remaining !== "undefined" && typeof data.premium_limit !== "undefined") {
+      if (data.premium_scans_remaining > 0) {
+        premiumQuotaEl.textContent = `🎯 ${data.premium_scans_remaining} of ${data.premium_limit} premium scans left today`;
+        premiumQuotaEl.style.color = "#ff9800";
+      } else {
+        premiumQuotaEl.textContent = "⚠️ No premium scans left today. Pay $15 to unlock.";
+        premiumQuotaEl.style.color = "red";
+        // ✅ DO NOT trigger popup here
+      }
+    }
+
+  } catch (err) {
+    console.error("Quota fetch error:", err);
+    const quotaEl = document.getElementById('quota');
+    if (quotaEl) {
+      quotaEl.textContent = "⚠️ Unable to load scan quota";
+      quotaEl.style.color = "red";
+    }
+    const premiumQuotaEl = document.getElementById('premiumQuota');
+    if (premiumQuotaEl) {
+      premiumQuotaEl.textContent = "⚠️ Unable to load premium scans";
+      premiumQuotaEl.style.color = "red";
+    }
   }
+}
+
+// Called when user clicks scan
+function onUserScanAttempt() {
+  scanAttempted = true;
+  updateQuota(); // ✅ safe: only updates DOM, no popup
+}
 
   // -----------------------------
   // Poll scan result
@@ -842,6 +845,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
