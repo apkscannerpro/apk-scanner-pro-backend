@@ -798,7 +798,7 @@ function showPaymentPopup(isPremium = false) {
   if (isPremium) {
     title.innerHTML = "💎 Premium Detailed Report";
     let quotaText = '';
-    if (premiumQuotaEl) {
+    if (premiumQuotaEl && premiumQuotaEl.textContent) {
       quotaText = `<br>🎯 ${premiumQuotaEl.textContent}`;
     }
     message.innerHTML = `Get a deep analysis report with historical malware lookup, and advanced insights so it can be downloaded safely.<br>Price: $15 per premium scan${quotaText}`;
@@ -828,6 +828,7 @@ function triggerBasicPaidPopup() {
     showPaymentPopup(false);
   }
 }
+
 
 
 // -----------------------------
@@ -910,6 +911,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
