@@ -145,6 +145,28 @@ def increment_premium_scans(count=1, email=None, payment_ref=None):
     conn.close()
 
 
+def increment_basic_scans(count=1, email=None, payment_ref=None):
+    """Increment basic-paid counter and log customer details."""
+    reset_if_new_day()
+    conn = db_conn()
+    c = conn.cursor()
+    # Update quota
+    c.execute("UPDATE quota SET used_basic_scans = used_basic_scans + ? WHERE id=1", (count,))
+    # Log transaction if details provided
+    if email:
+        c.execute(
+            "INSERT INTO basic_logs (id, email, payment_ref, created_at) VALUES (?, ?, ?, ?)",
+            (
+                str(uuid.uuid4()),
+                email,
+                payment_ref or "",
+                datetime.now(timezone.utc).isoformat()
+            )
+        )
+    conn.commit()
+    conn.close()
+
+
 # --- Jobs helpers ---
 def jobs_insert(job_id: str):
     conn = db_conn()
@@ -512,10 +534,20 @@ def thank_you():
 def paid_scan():
     """
     Called after manual payment confirmation (frontend thank-you redirect).
-    Unlocks premium scan for the user.
+    Unlocks either basic ($1) or premium ($15) scan for the user.
     """
-    increment_scans(1)
-    return jsonify({"ok": True, "message": "Paid scan unlocked", "premium": True})
+    data = request.get_json(silent=True) or {}
+    email = data.get("email")
+    payment_ref = data.get("payment_ref")
+    mode = data.get("mode", "basic")  # "basic" (default) or "premium"
+
+    if mode == "premium":
+        increment_premium_scans(1, email=email, payment_ref=payment_ref)
+        return jsonify({"ok": True, "message": "Premium scan unlocked", "premium": True})
+    else:
+        increment_basic_scans(1, email=email, payment_ref=payment_ref)
+        return jsonify({"ok": True, "message": "Basic scan unlocked", "basic_paid": True})
+
 
 
 # Robots.txt (served dynamically)
@@ -824,6 +856,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
