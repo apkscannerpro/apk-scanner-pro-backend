@@ -727,13 +727,14 @@ function showPaymentPopup(isPremium = false) {
     localStorage.setItem("paymentRef", ref);
     localStorage.setItem("paymentMode", currentPaymentMode);
 
-    // ✅ Show pending payment banner immediately (update text span only)
+    // ✅ Show pending payment banner immediately
     const banner = document.getElementById("pendingPaymentBanner");
-    const textSpan = document.getElementById("pendingPaymentText");
-    if (banner && textSpan) {
-      textSpan.innerText = `✅ Pending payment detected for ${email} (Ref: ${ref}). Complete a scan to use it.`;
-      banner.style.display = "block";
-    }
+    if (banner) {
+    banner.style.display = "block";
+    document.getElementById("pendingPaymentText").innerText =
+    `✅ Pending payment detected. Ref: ${ref}. Please upload your APK to continue.`;
+  }
+
 
     // redirect only after validation
     window.location.href = "https://www.apkscannerpro.com/thank-you";
@@ -762,8 +763,29 @@ function showPaymentPopup(isPremium = false) {
     const banner = document.getElementById("pendingPaymentBanner");
     if (banner) banner.style.display = "none";
   }
-</script>
-</body>
+
+
+  function clearPendingPayment() {
+  // 🔹 Remove from localStorage
+  localStorage.removeItem("paidEmail");
+  localStorage.removeItem("paymentRef");
+  localStorage.removeItem("paymentMode");
+
+  // 🔹 Hide banner
+  const banner = document.getElementById("pendingPaymentBanner");
+  if (banner) {
+    banner.style.display = "none";
+  }
+
+  // Optional: also clear the text span
+  const text = document.getElementById("pendingPaymentText");
+  if (text) {
+    text.innerText = "";
+  }
+
+  alert("❌ Pending payment cleared. You can start over if needed.");
+}
+</script>  
 
 // -----------------------------
 // Auto trigger payment when premium checkbox clicked
@@ -813,6 +835,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
