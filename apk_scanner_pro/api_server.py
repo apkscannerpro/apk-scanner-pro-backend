@@ -35,7 +35,7 @@ UPLOAD_DIR = "/tmp/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # -------------------------------------------------------------------------------
-# Database (quota + jobs)
+# Database (quota + jobs + premium logs)
 # -------------------------------------------------------------------------------
 DB_PATH = os.path.join(os.path.dirname(__file__), "quota.db")
 
@@ -68,6 +68,15 @@ def init_db():
             status TEXT NOT NULL,
             result TEXT,
             error TEXT,
+            created_at TEXT NOT NULL
+        )
+    """)
+    # Premium logs (NEW)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS premium_logs (
+            id TEXT PRIMARY KEY,
+            email TEXT NOT NULL,
+            payment_ref TEXT,
             created_at TEXT NOT NULL
         )
     """)
@@ -114,11 +123,24 @@ def increment_free_scans(count=1):
     conn.close()
 
 
-def increment_premium_scans(count=1):
+def increment_premium_scans(count=1, email=None, payment_ref=None):
+    """Increment premium counter and log customer details."""
     reset_if_new_day()
     conn = db_conn()
     c = conn.cursor()
+    # Update quota
     c.execute("UPDATE quota SET used_premium_scans = used_premium_scans + ? WHERE id=1", (count,))
+    # Log transaction if details provided
+    if email:
+        c.execute(
+            "INSERT INTO premium_logs (id, email, payment_ref, created_at) VALUES (?, ?, ?, ?)",
+            (
+                str(uuid.uuid4()),
+                email,
+                payment_ref or "",
+                datetime.now(timezone.utc).isoformat()
+            )
+        )
     conn.commit()
     conn.close()
 
@@ -350,11 +372,12 @@ def _start_job(target_fn, *args, **kwargs):
     EXECUTOR.submit(_run)
     return job_id
 
-def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False):
+def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
     """
     Handles email sending and scan result processing.
     - Free scans: basic report
-    - Premium scans: full report
+    - Paid-basic scans: basic report (with $1 payment)
+    - Premium scans: full report (requires valid payment_ref)
     """
     if isinstance(scan_result, dict) and "error" in scan_result:
         return {"error": scan_result.get("error", "Scan failed"), "success": False, "email": user_email}
@@ -362,32 +385,63 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
     # ✅ Removed quota increment here (already handled in scan_async)
 
     if user_email:
-        # Free scan → basic summary only
-        if not premium:
+        if premium:
+            # ✅ Enforce payment_ref for premium
+            if not payment_ref:
+                return {"error": "Premium scan requires valid payment reference.", "success": False, "email": user_email}
+
             email_sent = send_report_via_email(
-                user_email,
-                {"summary": generate_summary(scan_result)},
-                file_name_or_url=file_name_or_url
+                to_email=user_email,
+                scan_result=scan_result,
+                file_name=file_name_or_url,
+                premium=True,
+                payment_ref=payment_ref
             )
+
+        elif basic_paid:
+            # ✅ Paid-basic scan ($1)
+            email_sent = send_report_via_email(
+                to_email=user_email,
+                scan_result={"summary": generate_summary(scan_result)},
+                file_name=file_name_or_url,
+                premium=False,
+                payment_ref="basic_paid"
+            )
+
         else:
-            # Premium → full report
+            # ✅ Free scan (basic)
             email_sent = send_report_via_email(
-                user_email,
-                scan_result,
-                file_name_or_url=file_name_or_url
+                to_email=user_email,
+                scan_result={"summary": generate_summary(scan_result)},
+                file_name=file_name_or_url,
+                premium=False
             )
-        
+
         # Save lead from scan
         _save_lead(name="", email=user_email, source="scan_report")
-        return {"success": email_sent, "email": user_email, "premium": premium}
 
-    return {"success": False, "email": None, "premium": premium}
+        return {
+            "success": email_sent,
+            "email": user_email,
+            "premium": premium,
+            "basic_paid": basic_paid
+        }
+
+    return {"success": False, "email": None, "premium": premium, "basic_paid": basic_paid}
 
 
-def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None):
+
+def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
     try:
         scan_result = scan_apk_file(tmp_path, premium=premium, payment_ref=payment_ref)
-        return _finalize_scan(scan_result, user_email, file_name_or_url=file_name_or_url, premium=premium)
+        return _finalize_scan(
+            scan_result,
+            user_email,
+            file_name_or_url=file_name_or_url,
+            premium=premium,
+            payment_ref=payment_ref,
+            basic_paid=basic_paid
+        )
     finally:
         try:
             if tmp_path and os.path.exists(tmp_path):
@@ -396,7 +450,7 @@ def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premiu
             pass
 
 
-def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premium=False, payment_ref=None):
+def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
     if is_direct_apk_url(url_param):
         local = download_apk_to_tmp(url_param)
         try:
@@ -409,8 +463,15 @@ def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premiu
                 pass
     else:
         scan_result = scan_url(url_param, premium=premium, payment_ref=payment_ref)
-    return _finalize_scan(scan_result, user_email, file_name_or_url=file_name_or_url or url_param, premium=premium)
 
+    return _finalize_scan(
+        scan_result,
+        user_email,
+        file_name_or_url=file_name_or_url or url_param,
+        premium=premium,
+        payment_ref=payment_ref,
+        basic_paid=basic_paid
+    )
 
 
 # -------------------------------------------------------------------------------
@@ -561,19 +622,21 @@ def scan_async():
         reset_if_new_day()
 
         # Fetch used counters
-        used = get_used_scans()  # {"free": X, "premium": Y}
+        used = get_used_scans()  # {"free": X, "premium": Y, "basic_paid": Z}
         used_free = used.get("free", 0)
         used_premium = used.get("premium", 0)
+        used_basic_paid = used.get("basic_paid", 0)
 
         FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
         PREMIUM_LIMIT = int(os.getenv("MAX_PREMIUM_SCANS_PER_DAY", "50"))
+        BASIC_PAID_LIMIT = int(os.getenv("MAX_BASIC_PAID_SCANS_PER_DAY", "500"))
 
         # Parse request
         json_body = request.get_json(silent=True) or {}
         form = request.form or {}
 
         user_email = form.get("email") or json_body.get("email")
-        payment_ref = form.get("payment_ref") or json_body.get("payment_ref")  # ✅ keep
+        payment_ref = form.get("payment_ref") or json_body.get("payment_ref")
         url_param = (form.get("apk_url") or form.get("apk_link") or ""
                      or json_body.get("apk_url") or json_body.get("apk_link") or "").strip()
 
@@ -588,12 +651,19 @@ def scan_async():
         if not apk_file and not url_param:
             return jsonify({"error": "No APK file or apk_url provided"}), 400
 
-        # Premium flag
+        # Flags
         premium = False
+        basic_paid = False
+
         if "premium" in form:
             premium = form.get("premium").lower() == "true"
         elif "premium" in json_body:
             premium = json_body.get("premium") is True
+
+        if "basic_paid" in form:
+            basic_paid = form.get("basic_paid").lower() == "true"
+        elif "basic_paid" in json_body:
+            basic_paid = json_body.get("basic_paid") is True
 
         # -----------------------------
         # Check quotas + enforce payment
@@ -613,12 +683,31 @@ def scan_async():
                     "payment_required": True,
                     "premium": True
                 }), 403
+
+        elif basic_paid:
+            # ✅ Paid-basic scans
+            if not payment_ref or not user_email:
+                return jsonify({
+                    "error": "Email and payment reference are required for paid basic scans.",
+                    "payment_required": True,
+                    "basic_paid": True
+                }), 403
+
+            if used_basic_paid >= BASIC_PAID_LIMIT:
+                return jsonify({
+                    "error": "Daily basic paid scan limit reached.",
+                    "payment_required": True,
+                    "basic_paid": True
+                }), 403
+
         else:
+            # ✅ Free scans
             if used_free >= FREE_LIMIT:
                 return jsonify({
                     "error": "Daily free scan limit reached. Please pay $1 per scan to continue.",
                     "payment_required": True,
-                    "premium": False
+                    "premium": False,
+                    "basic_paid": False
                 }), 403
 
         # -----------------------------
@@ -634,7 +723,8 @@ def scan_async():
                 tmp_path=tmp_path,
                 file_name_or_url=filename,
                 premium=premium,
-                payment_ref=payment_ref  # ✅ passed forward
+                payment_ref=payment_ref,
+                basic_paid=basic_paid
             )
         else:
             job_id = _start_job(
@@ -643,20 +733,24 @@ def scan_async():
                 url_param=url_param,
                 file_name_or_url=url_param,
                 premium=premium,
-                payment_ref=payment_ref  # ✅ passed forward
+                payment_ref=payment_ref,
+                basic_paid=basic_paid
             )
 
         # -----------------------------
-        # ✅ Increment counters only ONCE here
+        # ✅ Increment counters here
         # -----------------------------
         if premium:
             increment_premium_scans()
+        elif basic_paid:
+            increment_basic_paid_scans()
         else:
             increment_free_scans()
 
         return jsonify({
             "job_id": job_id,
-            "premium": premium
+            "premium": premium,
+            "basic_paid": basic_paid
         })
 
     except Exception as e:
@@ -728,6 +822,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
