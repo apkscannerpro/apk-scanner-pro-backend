@@ -121,7 +121,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   <div class="popup-content" style="background:#1a1a1a; padding:2rem; border-radius:10px; text-align:center; max-width:420px; width:90%;">
     <h2 id="paymentTitle">💳 Upgrade to Paid Scan</h2>
     <p id="paymentMessage">
-      You’ve used all <strong>200 free scans today</strong>. Additional scans cost <strong>$1 each</strong>.
+      <!-- Dynamic text inserted via JS -->
     </p>
 
     <p style="margin-top:15px; font-size:0.9rem; line-height:1.6; color:#ccc;">
@@ -288,14 +288,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         Loading premium scans remaining today...
       </p>
 
-      <!-- Premium Option -->
+     <!-- Premium Option -->
     <label style="display:block; margin-top:8px; color:#ccc; font-size:0.95rem; cursor:pointer;">
-   <input type="checkbox" id="premiumOption" style="margin-right:6px;"> 🔒 Unlock Premium Report – (manual payment)
-   </label>
+       <input type="checkbox" id="premiumOption" style="margin-right:6px;"> 🔒 Unlock Premium Report – (manual payment)
+    </label>
 
-      <button id="premiumPayBtn" style="margin-top:10px; padding:6px 12px; background:#ff6b81; color:white; border:none; border-radius:5px; cursor:pointer;">
-      Pay & Unlock
-   </button>
+     <button id="premiumPayBtn" style="margin-top:10px; padding:6px 12px; background:#ff6b81; color:white; border:none; border-radius:5px; cursor:pointer;">
+        Pay & Unlock
+     </button>
 
     </form>
 
@@ -687,6 +687,41 @@ if (scanForm) {
 });
 
 
+let currentPaymentMode = null; // "basic" or "premium"
+
+// -----------------------------
+// Show payment popup
+// -----------------------------
+function showPaymentPopup(isPremium = false) {
+  const popup = document.getElementById("paymentPopup");
+  const title = document.getElementById("paymentTitle");
+  const message = document.getElementById("paymentMessage");
+
+  if (!popup || !title || !message) return;
+
+  // Set current mode
+  currentPaymentMode = isPremium ? "premium" : "basic";
+
+  // Dynamic title/message
+  if (isPremium) {
+    title.innerText = "💎 Premium Scan Payment";
+    message.innerHTML = "You chose the <strong>Premium Report</strong>. $15 per scan for full detailed PDF report.";
+  } else {
+    title.innerText = "💳 Upgrade to Paid Scan";
+    message.innerHTML = "You’ve used all <strong>200 free scans today</strong>. Additional scans cost <strong>$1 each</strong>.";
+  }
+
+  popup.style.display = "flex";
+}
+
+// -----------------------------
+// Hide payment popup
+// -----------------------------
+function hidePaymentPopup() {
+  const popup = document.getElementById("paymentPopup");
+  if (popup) popup.style.display = "none";
+}
+
 // -----------------------------
 // Complete Payment
 // -----------------------------
@@ -699,12 +734,12 @@ async function completePayment() {
     return;
   }
 
-  // ✅ Save in localStorage so thank-you page can still show details
+  // Save in localStorage
   localStorage.setItem("paidEmail", email);
   localStorage.setItem("paymentRef", ref);
   localStorage.setItem("paymentMode", currentPaymentMode);
 
-  // ✅ Call backend immediately to record unlock
+  // Call backend
   try {
     await fetch("/paid-scan", {
       method: "POST",
@@ -712,24 +747,22 @@ async function completePayment() {
       body: JSON.stringify({
         email,
         payment_ref: ref,
-        mode: currentPaymentMode // explicitly pass "basic" or "premium"
+        mode: currentPaymentMode
       })
     });
   } catch (err) {
     console.error("Failed to confirm payment with backend:", err);
   }
 
-  // ✅ Show pending payment banner
+  // Show pending banner
   const banner = document.getElementById("pendingPaymentBanner");
   const textSpan = document.getElementById("pendingPaymentText");
   if (banner && textSpan) {
-    textSpan.innerText =
-      `✅ Pending payment detected for ${email} (Ref: ${ref}). Complete a scan to use it.`;
+    textSpan.innerText = `✅ Pending payment detected for ${email} (Ref: ${ref}). Complete a scan to use it.`;
     banner.style.display = "block";
   }
 
-  // ✅ Redirect only after validation
-  window.location.href = "https://www.apkscannerpro.com/thank-you";
+  hidePaymentPopup(); // hide popup after done
 }
 
 // -----------------------------
@@ -742,8 +775,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const banner = document.getElementById("pendingPaymentBanner");
     const textSpan = document.getElementById("pendingPaymentText");
     if (banner && textSpan) {
-      textSpan.innerText =
-        `✅ Pending payment detected for ${email} (Ref: ${ref}). Complete a scan to use it.`;
+      textSpan.innerText = `✅ Pending payment detected for ${email} (Ref: ${ref}). Complete a scan to use it.`;
       banner.style.display = "block";
     }
   }
@@ -753,16 +785,13 @@ document.addEventListener("DOMContentLoaded", () => {
 // Allow manual cancel
 // -----------------------------
 function clearPendingPayment() {
-  // 🔹 Remove from localStorage
   localStorage.removeItem("paidEmail");
   localStorage.removeItem("paymentRef");
   localStorage.removeItem("paymentMode");
 
-  // 🔹 Hide banner
   const banner = document.getElementById("pendingPaymentBanner");
   if (banner) banner.style.display = "none";
 
-  // 🔹 Clear text
   const text = document.getElementById("pendingPaymentText");
   if (text) text.innerText = "";
 
@@ -770,25 +799,21 @@ function clearPendingPayment() {
 }
 
 // -----------------------------
-// Auto trigger payment popup
+// Premium checkbox + button logic
 // -----------------------------
 document.addEventListener("DOMContentLoaded", () => {
-  // Premium checkbox
   const premiumOption = document.getElementById('premiumOption');
+  const premiumPayBtn = document.getElementById('premiumPayBtn');
   let premiumChecked = false;
 
   if (premiumOption) {
     premiumOption.addEventListener('change', function () {
       premiumChecked = this.checked; // remember if user checked the box
-      // ❌ Do NOT open popup yet
     });
   }
 
-  // Premium "Pay & Unlock" button
-  const premiumPayBtn = document.getElementById('premiumPayBtn');
   if (premiumPayBtn) {
     premiumPayBtn.addEventListener('click', () => {
-      // ✅ Only open popup if user checked the box
       if (premiumChecked) {
         showPaymentPopup(true); // premium mode
       } else {
@@ -797,6 +822,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
 
 // -----------------------------
 // Handle quota errors dynamically
@@ -811,15 +837,21 @@ async function startScan(formData) {
     const json = await response.json();
 
     if (!response.ok && json.payment_required) {
-      // ✅ Show correct popup depending on backend flag
-      showPaymentPopup(json.premium === true);
+      // ✅ Determine popup type
+      if (json.premium === true) {
+        // Premium report popup (checkbox + pay)
+        alert("⚠️ You need to check 'Unlock Premium Report' and click Pay & Unlock to access premium scans.");
+      } else if (json.basic_paid === true) {
+        // Basic-paid popup (free limit reached)
+        showPaymentPopup(false); // basic-paid mode
+      }
       return;
     }
 
     if (json.job_id) {
       console.log("Scan started:", json.job_id);
 
-      // ✅ If user had a pending payment, clear banner + show toast
+      // ✅ Handle pending payments
       const paidEmail = localStorage.getItem("paidEmail");
       const paymentRef = localStorage.getItem("paymentRef");
       const paymentMode = localStorage.getItem("paymentMode");
@@ -867,6 +899,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
