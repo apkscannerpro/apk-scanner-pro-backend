@@ -814,7 +814,6 @@ function hidePaymentPopup() {
 // Trigger basic-paid popup (call inside startScan only!)
 // -----------------------------
 function triggerBasicPaidPopup() {
-  // ✅ Only trigger after free scan is exhausted, not on page load
   if (!pageJustLoaded) {
     showPaymentPopup(false);
   }
@@ -847,34 +846,8 @@ async function completePayment() {
     console.error("Failed to confirm payment with backend:", err);
   }
 
-  hidePaymentPopup();
+  hidePaymentPopup(); // ✅ remove popup after payment
 }
-
-// -----------------------------
-// Premium checkbox + button logic
-// -----------------------------
-document.addEventListener("DOMContentLoaded", () => {
-  const premiumOption = document.getElementById('premiumOption');
-  const premiumPayBtn = document.getElementById('premiumPayBtn');
-  let premiumChecked = false;
-
-  if (premiumOption) {
-    premiumOption.addEventListener('change', function () {
-      premiumChecked = this.checked; // remember if user checked the box
-    });
-  }
-
-  if (premiumPayBtn) {
-    premiumPayBtn.addEventListener('click', () => {
-      if (premiumChecked) {
-        showPaymentPopup(true); // premium mode
-      } else {
-        alert("⚠️ Please check the 'Unlock Premium Report' box first before proceeding.");
-      }
-    });
-  }
-});
-
 
 // -----------------------------
 // Handle quota errors dynamically
@@ -913,6 +886,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
