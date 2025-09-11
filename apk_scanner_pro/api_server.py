@@ -590,9 +590,10 @@ def scan_stats():
     reset_if_new_day()
 
     # Get used scan counts
-    used = get_used_scans()  # {"free": X, "premium": Y}
+    used = get_used_scans()  # {"free": X, "premium": Y, "basic_paid": Z}
     used_free = int(used.get("free", 0))
     used_premium = int(used.get("premium", 0))
+    used_basic_paid = int(used.get("basic_paid", 0))
 
     # Daily limits from environment (fallback to defaults)
     FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", 200))
@@ -609,6 +610,7 @@ def scan_stats():
         "free_scans_remaining": free_remaining,
         "premium_scans_remaining": premium_remaining,
         "used_free_scans": used_free,
+        "used_basic_paid_scans": used_basic_paid,   # ✅ NEW counter
         "used_premium_scans": used_premium,
         "free_limit": FREE_LIMIT,
         "premium_limit": PREMIUM_LIMIT
@@ -822,6 +824,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
