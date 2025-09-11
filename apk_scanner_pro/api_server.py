@@ -397,52 +397,59 @@ def _start_job(target_fn, *args, **kwargs):
 def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
     """
     Handles email sending and scan result processing.
+    Auto-detects quota & payment status.
     """
     if isinstance(scan_result, dict) and "error" in scan_result:
         return {"error": scan_result.get("error", "Scan failed"), "success": False, "email": user_email}
 
-    if user_email:
-        if premium:
-            if not payment_ref:
-                return {"error": "Premium scan requires valid payment reference.", "success": False, "email": user_email}
+    # --- Determine scan type ---
+    if not premium and not basic_paid:
+        # Check free quota
+        used = get_used_scans()
+        FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
+        if used.get("free", 0) >= FREE_LIMIT:
+            # Auto-upgrade to basic-paid ($1)
+            basic_paid = True
+            payment_ref = "basic_paid"
 
-            email_sent = send_report_via_email(
-                scan_result=scan_result,
-                to_email=user_email,
-                file_name=file_name_or_url,
-                premium=True,
-                payment_ref=payment_ref
-            )
+    if premium and not payment_ref:
+        # Enforce premium requires payment
+        return {"error": "Premium scan requires payment reference.", "success": False, "email": user_email}
 
-        elif basic_paid:
-            # $1 paid basic
-            email_sent = send_report_via_email(
-                scan_result={"summary": generate_summary(scan_result)},
-                to_email=user_email,
-                file_name=file_name_or_url,
-                premium=False,
-                payment_ref="basic_paid"
-            )
+    # --- Send email based on scan type ---
+    if premium:
+        email_sent = send_report_via_email(
+            scan_result=scan_result,
+            to_email=user_email,
+            file_name=file_name_or_url,
+            premium=True,
+            payment_ref=payment_ref
+        )
+    elif basic_paid:
+        email_sent = send_report_via_email(
+            scan_result={"summary": generate_summary(scan_result)},
+            to_email=user_email,
+            file_name=file_name_or_url,
+            premium=False,
+            payment_ref=payment_ref
+        )
+    else:
+        email_sent = send_report_via_email(
+            scan_result={"summary": generate_summary(scan_result)},
+            to_email=user_email,
+            file_name=file_name_or_url,
+            premium=False
+        )
 
-        else:
-            # Free
-            email_sent = send_report_via_email(
-                scan_result={"summary": generate_summary(scan_result)},
-                to_email=user_email,
-                file_name=file_name_or_url,
-                premium=False
-            )
+    # --- Save lead ---
+    _save_lead(name="", email=user_email, source="scan_report")
 
-        _save_lead(name="", email=user_email, source="scan_report")
-
-        return {
-            "success": email_sent,
-            "email": user_email,
-            "premium": premium,
-            "basic_paid": basic_paid
-        }
-
-    return {"success": False, "email": None, "premium": premium, "basic_paid": basic_paid}
+    return {
+        "success": email_sent,
+        "email": user_email,
+        "premium": premium,
+        "basic_paid": basic_paid
+    }
 
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
@@ -853,6 +860,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
