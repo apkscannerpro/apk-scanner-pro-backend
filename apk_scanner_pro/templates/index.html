@@ -151,16 +151,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <button onclick="hidePaymentPopup()" style="padding:6px 12px; margin-left:8px; background:#ccc; color:#333; border:none; border-radius:5px; cursor:pointer;">✖ Cancel</button>
   </div>
 </div>
-
-<!-- Pending Payment Banner -->
-<div id="pendingPaymentBanner" 
-     style="display:none; background:#222; color:#fff; padding:12px; text-align:center; position:fixed; top:0; left:0; width:100%; z-index:998;">
-  <span id="pendingPaymentText"></span>
-  <button onclick="clearPendingPayment()" 
-          style="margin-left:15px; background:#ff4444; border:none; color:#fff; padding:5px 10px; border-radius:5px; cursor:pointer;">
-    ✖ Cancel
-  </button>
-</div>
   
   
 <!-- Google Tag Manager (noscript) -->
@@ -688,25 +678,13 @@ if (scanForm) {
 
 
 let currentPaymentMode = "basic"; // "basic" or "premium"
-let pageJustLoaded = true;        // ✅ new flag to prevent popup on reload
+let pageJustLoaded = true;        // ✅ Prevent popup on reload
 
 // -----------------------------
-// DOMContentLoaded: Restore banner + initialize event listeners
+// DOMContentLoaded: Initialize event listeners
 // -----------------------------
 document.addEventListener("DOMContentLoaded", () => {
   pageJustLoaded = false;
-
-  // Restore pending payment banner only
-  const email = localStorage.getItem("paidEmail");
-  const ref = localStorage.getItem("paymentRef");
-  if (email && ref) {
-    const banner = document.getElementById("pendingPaymentBanner");
-    const textSpan = document.getElementById("pendingPaymentText");
-    if (banner && textSpan) {
-      textSpan.innerText = `✅ Pending payment detected for ${email} (Ref: ${ref}). Complete a scan to use it.`;
-      banner.style.display = "block";
-    }
-  }
 
   // Premium checkbox + pay button logic
   const premiumOption = document.getElementById('premiumOption');
@@ -765,7 +743,7 @@ function hidePaymentPopup() {
 // Trigger basic-paid popup (call inside startScan only!)
 // -----------------------------
 function triggerBasicPaidPopup() {
-  // ✅ Prevent popup from showing on page load
+  // ✅ Only trigger after free scan is exhausted, not on page load
   if (!pageJustLoaded) {
     showPaymentPopup(false);
   }
@@ -783,11 +761,6 @@ async function completePayment() {
     return;
   }
 
-  // Save in localStorage
-  localStorage.setItem("paidEmail", email);
-  localStorage.setItem("paymentRef", ref);
-  localStorage.setItem("paymentMode", currentPaymentMode);
-
   // Call backend
   try {
     await fetch("/paid-scan", {
@@ -803,32 +776,7 @@ async function completePayment() {
     console.error("Failed to confirm payment with backend:", err);
   }
 
-  // Show pending banner
-  const banner = document.getElementById("pendingPaymentBanner");
-  const textSpan = document.getElementById("pendingPaymentText");
-  if (banner && textSpan) {
-    textSpan.innerText = `✅ Pending payment detected for ${email} (Ref: ${ref}). Complete a scan to use it.`;
-    banner.style.display = "block";
-  }
-
   hidePaymentPopup();
-}
-
-// -----------------------------
-// Allow manual cancel
-// -----------------------------
-function clearPendingPayment() {
-  localStorage.removeItem("paidEmail");
-  localStorage.removeItem("paymentRef");
-  localStorage.removeItem("paymentMode");
-
-  const banner = document.getElementById("pendingPaymentBanner");
-  if (banner) banner.style.display = "none";
-
-  const text = document.getElementById("pendingPaymentText");
-  if (text) text.innerText = "";
-
-  alert("❌ Pending payment cleared. You can start over if needed.");
 }
 
 // -----------------------------
@@ -934,6 +882,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
