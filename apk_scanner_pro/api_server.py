@@ -397,49 +397,42 @@ def _start_job(target_fn, *args, **kwargs):
 def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
     """
     Handles email sending and scan result processing.
-    - Free scans: basic report
-    - Paid-basic scans: basic report (with $1 payment)
-    - Premium scans: full report (requires valid payment_ref)
     """
     if isinstance(scan_result, dict) and "error" in scan_result:
         return {"error": scan_result.get("error", "Scan failed"), "success": False, "email": user_email}
 
-    # ✅ Removed quota increment here (already handled in scan_async)
-
     if user_email:
         if premium:
-            # ✅ Enforce payment_ref for premium
             if not payment_ref:
                 return {"error": "Premium scan requires valid payment reference.", "success": False, "email": user_email}
 
             email_sent = send_report_via_email(
-                to_email=user_email,
                 scan_result=scan_result,
+                to_email=user_email,
                 file_name=file_name_or_url,
                 premium=True,
                 payment_ref=payment_ref
             )
 
         elif basic_paid:
-            # ✅ Paid-basic scan ($1)
+            # $1 paid basic
             email_sent = send_report_via_email(
-                to_email=user_email,
                 scan_result={"summary": generate_summary(scan_result)},
+                to_email=user_email,
                 file_name=file_name_or_url,
                 premium=False,
                 payment_ref="basic_paid"
             )
 
         else:
-            # ✅ Free scan (basic)
+            # Free
             email_sent = send_report_via_email(
-                to_email=user_email,
                 scan_result={"summary": generate_summary(scan_result)},
+                to_email=user_email,
                 file_name=file_name_or_url,
                 premium=False
             )
 
-        # Save lead from scan
         _save_lead(name="", email=user_email, source="scan_report")
 
         return {
@@ -450,7 +443,6 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
         }
 
     return {"success": False, "email": None, "premium": premium, "basic_paid": basic_paid}
-
 
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
@@ -861,6 +853,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
