@@ -842,6 +842,11 @@ async function completePayment() {
     return;
   }
 
+  // Store payment info locally for scan
+  localStorage.setItem("paidEmail", email);
+  localStorage.setItem("paymentRef", ref);
+  localStorage.setItem("paymentMode", currentPaymentMode);
+
   // Call backend
   try {
     await fetch("/paid-scan", {
@@ -858,6 +863,16 @@ async function completePayment() {
   }
 
   hidePaymentPopup(); // ✅ remove popup after payment
+
+  // Automatically continue scan if form exists
+  const scanForm = document.getElementById('scanForm');
+  if (scanForm) {
+    const formData = new FormData(scanForm);
+    formData.set("email", email);
+    formData.append("payment_ref", ref);
+    if (currentPaymentMode === "premium") formData.append("premium", "true");
+    startScan(formData);
+  }
 }
 
 // -----------------------------
@@ -895,6 +910,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
