@@ -81,10 +81,10 @@
      alt="APK Scanner Pro Logo" 
      style="max-width: 120px; height: auto; display: block; margin: 0 auto;">
     <h1>Thank you!</h1>
-    <p>Your payment was received. Your account has been credited with one scan.</p>
-    <p id="confirmationMsg">🎉 1 extra scan unlocked! You can now continue scanning.</p>
+    <p id="mainMsg">Your payment was received. Preparing your extra scans...</p>
+    <p id="confirmationMsg"></p>
     <p><button class="btn" onclick="window.location.href='/'">Return & Scan Now</button></p>
-    <p style="opacity:.8">If the credit doesn’t appear instantly, wait 10–20 seconds for the webhook to arrive and refresh.</p>
+    <p style="opacity:.8">If the credit doesn’t appear instantly, wait 10–20 seconds and refresh.</p>
 
     <footer>
       <div class="social-icons">
@@ -100,12 +100,25 @@
     </footer>
   </div>
 
-  <!-- Unlock 1 paid scan automatically + show confirmation -->
+  <!-- Auto-detect Basic vs Premium -->
   <script>
+    const mode = localStorage.getItem("paymentMode");
+    const ref = localStorage.getItem("paymentRef") || "";
+
+    let msg = "";
+    if (mode === "premium") {
+      msg = "🎉 Premium unlocked! Your payment ref " + ref + " has been saved. Enjoy advanced reports + extra scan.";
+    } else if (mode === "basic") {
+      msg = "🎉 1 extra scan unlocked! Payment ref " + ref + " saved.";
+    } else {
+      msg = "✅ Payment processed successfully. You can continue scanning.";
+    }
+
+    document.getElementById("confirmationMsg").innerText = msg;
+    document.getElementById("confirmationMsg").style.display = "block";
+
+    // Call backend to mark paid scan if needed
     fetch("/paid-scan", {method:"POST"})
-      .then(() => {
-        document.getElementById("confirmationMsg").style.display = "block";
-      })
       .catch(err => console.error("Failed to unlock paid scan:", err));
   </script>
 </body>
