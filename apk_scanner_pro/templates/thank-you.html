@@ -109,12 +109,13 @@
 
   <!-- Auto-detect Basic vs Premium -->
   <script>
-    const mode = localStorage.getItem("paymentMode");
+    const mode = localStorage.getItem("paymentMode") || "basic";
     const ref = localStorage.getItem("paymentRef") || "";
+    const email = localStorage.getItem("paymentEmail") || "";
 
     let msg = "";
     if (mode === "premium") {
-      msg = "🎉 Premium unlocked! Your payment ref " + ref + " has been saved. Enjoy advanced reports + extra 1 scan.";
+      msg = "🎉 Premium unlocked! Your payment ref " + ref + " has been saved. Enjoy advanced reports + 1 extra scan.";
     } else if (mode === "basic") {
       msg = "🎉 1 extra scan unlocked! Payment ref " + ref + " saved.";
     } else {
@@ -126,11 +127,15 @@
     confirmationEl.style.display = "block";
     confirmationEl.setAttribute("role", "status");
 
-    // Call backend to mark paid scan if needed
+    // Call backend to mark paid scan
     fetch("/paid-scan", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ mode: mode || "generic", ref })
+      body: JSON.stringify({
+        mode: mode,
+        payment_ref: ref,
+        email: email
+      })
     }).catch(err => console.error("Failed to unlock paid scan:", err));
   </script>
 </body>
