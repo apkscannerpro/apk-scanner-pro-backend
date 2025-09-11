@@ -58,9 +58,16 @@
         "@type": "ImageObject",
         "url": "https://apkscannerpro.com/static/logo.png"
       }
+    },
+    "mainEntity": {
+      "@type": "PaymentChargeSpecification",
+      "name": "APK Scanner Pro Paid Scan",
+      "priceCurrency": "USD",
+      "description": "Successful payment confirmation for APK Scanner Pro extra scans."
     }
   }
   </script>
+
   <style>
     body {background:#0a0a0a;color:#fff;font-family:Poppins,Arial,sans-serif;margin:0}
     .wrap {max-width:720px;margin:60px auto;padding:0 16px;text-align:center}
@@ -107,19 +114,24 @@
 
     let msg = "";
     if (mode === "premium") {
-      msg = "🎉 Premium unlocked! Your payment ref " + ref + " has been saved. Enjoy advanced reports + extra scan.";
+      msg = "🎉 Premium unlocked! Your payment ref " + ref + " has been saved. Enjoy advanced reports + extra 1 scan.";
     } else if (mode === "basic") {
       msg = "🎉 1 extra scan unlocked! Payment ref " + ref + " saved.";
     } else {
       msg = "✅ Payment processed successfully. You can continue scanning.";
     }
 
-    document.getElementById("confirmationMsg").innerText = msg;
-    document.getElementById("confirmationMsg").style.display = "block";
+    const confirmationEl = document.getElementById("confirmationMsg");
+    confirmationEl.innerText = msg;
+    confirmationEl.style.display = "block";
+    confirmationEl.setAttribute("role", "status");
 
     // Call backend to mark paid scan if needed
-    fetch("/paid-scan", {method:"POST"})
-      .catch(err => console.error("Failed to unlock paid scan:", err));
+    fetch("/paid-scan", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ mode: mode || "generic", ref })
+    }).catch(err => console.error("Failed to unlock paid scan:", err));
   </script>
 </body>
 </html>
