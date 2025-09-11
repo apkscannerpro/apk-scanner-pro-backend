@@ -764,10 +764,15 @@ document.addEventListener("DOMContentLoaded", () => {
   let premiumChecked = false;
 
   if (premiumOption) {
-    premiumOption.addEventListener('change', function () {
-      premiumChecked = this.checked;
-    });
-  }
+  premiumOption.addEventListener('change', function () {
+    premiumChecked = this.checked;
+
+    // ✅ Trigger premium popup immediately when checked
+    if (premiumChecked) {
+      showPaymentPopup(true);
+    }
+  });
+}
 
   if (premiumPayBtn) {
     premiumPayBtn.addEventListener('click', () => {
@@ -885,6 +890,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
