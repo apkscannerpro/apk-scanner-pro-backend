@@ -818,12 +818,9 @@ async function startScan(formData) {
     const json = await response.json();
 
     if (!response.ok && json.payment_required) {
-      // ✅ Determine popup type
       if (json.premium === true) {
-        // Premium report popup (checkbox + pay)
         alert("⚠️ You need to check 'Unlock Premium Report' and click Pay & Unlock to access premium scans.");
       } else if (json.basic_paid === true) {
-        // Basic-paid popup (free limit reached)
         if (!pageJustLoaded) {
           showPaymentPopup(false); // basic-paid mode
         }
@@ -832,45 +829,8 @@ async function startScan(formData) {
     }
 
     if (json.job_id) {
-      console.log("Scan started:", json.job_id);
-
-      // ✅ Handle pending payments
-      const paidEmail = localStorage.getItem("paidEmail");
-      const paymentRef = localStorage.getItem("paymentRef");
-      const paymentMode = localStorage.getItem("paymentMode");
-
-      if (paidEmail && paymentRef) {
-        clearPendingPayment();
-
-        // Differentiate between premium and basic
-        let msg = "";
-        let bg = "";
-        if (paymentMode === "premium") {
-          msg = "✅ Premium scan confirmed. Report will be emailed with full PDF.";
-          bg = "#28a745"; // green
-        } else {
-          msg = "✅ Paid scan confirmed. Report will be emailed shortly.";
-          bg = "#007bff"; // blue
-        }
-
-        // 🔔 Create toast
-        const toast = document.createElement("div");
-        toast.innerText = msg;
-        toast.style.position = "fixed";
-        toast.style.bottom = "20px";
-        toast.style.right = "20px";
-        toast.style.background = bg;
-        toast.style.color = "#fff";
-        toast.style.padding = "12px 18px";
-        toast.style.borderRadius = "8px";
-        toast.style.boxShadow = "0 4px 10px rgba(0,0,0,0.3)";
-        toast.style.zIndex = "1000";
-        document.body.appendChild(toast);
-
-        setTimeout(() => toast.remove(), 5000);
-      }
-
-      // TODO: continue with pollResult or job status checker
+      const email = formData.get("email");
+      pollResult(json.job_id, document.querySelector('#scanForm button'), email);
     } else if (json.error) {
       alert(json.error);
     }
@@ -882,6 +842,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
