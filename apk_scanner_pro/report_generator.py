@@ -228,19 +228,22 @@ def add_to_subscribers(email: str, name: str = "", file_name: str = ""):
 
 
 # === Send report via email (Plain Text + PDF) ===
-def send_report_via_email(
-    to_email: str,
-    scan_result: dict,
-    file_name: str = "APK File",
-    premium: bool = False,
-    payment_ref: str = None
-) -> bool:
+def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = "APK File", premium: bool = False, payment_ref: str = None) -> bool:
     """
     Send scan results to the user.
     - Free users → basic summary (no PDF)
     - Basic-paid → same as free, but includes payment_ref in body
     - Premium → full report + PDF (only if premium=True AND payment_ref provided)
+
+    Accepts to_email as a keyword-only argument. If called without to_email, will attempt to read
+    from scan_result['user_email'].
     """
+    # 🔒 Determine recipient email
+    if not to_email:
+        to_email = scan_result.get("user_email")
+    if not to_email:
+        print("❌ No recipient email provided. Aborting send_report_via_email.")
+        return False
 
     # 🔒 Enforce premium requires payment_ref
     if premium and not payment_ref:
@@ -495,6 +498,7 @@ def scan():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 
