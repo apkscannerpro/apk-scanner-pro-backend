@@ -346,7 +346,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         Loading premium scans remaining today...
       </p>
 
-     <!-- Premium Option -->
+<!-- Premium Option -->
 <label style="display:block; margin-top:8px; color:#ccc; font-size:0.95rem; cursor:pointer;">
    <input type="checkbox" id="premiumOption" style="margin-right:6px;"> 🔒 Unlock Premium Report – (manual payment)
 </label>
@@ -793,15 +793,14 @@ function showPaymentPopup(isPremium = false) {
 
   const title = document.getElementById("paymentTitle");
   const message = document.getElementById("paymentMessage");
-  const premiumQuotaEl = document.getElementById('premiumQuota');
 
   if (isPremium) {
     title.innerHTML = "💎 Premium Detailed Report";
-    let quotaText = '';
-    if (premiumQuotaEl && premiumQuotaEl.textContent) {
-      quotaText = `<br>🎯 ${premiumQuotaEl.textContent}`;
-    }
-    message.innerHTML = `Get a deep analysis report with historical malware lookup, and advanced insights so it can be downloaded safely.<br>Price: $15 per premium scan${quotaText}`;
+    message.innerHTML = `
+      Get a deep analysis report with historical malware lookup, 
+      and advanced insights so it can be downloaded safely.<br>
+      Price: $15 per premium scan
+    `;
     currentPaymentMode = "premium";
   } else {
     title.innerHTML = "💳 Upgrade to Paid Scan";
@@ -809,6 +808,7 @@ function showPaymentPopup(isPremium = false) {
     currentPaymentMode = "basic";
   }
 
+  popup.classList.remove("hidden");
   popup.style.display = "flex";
 }
 
@@ -817,18 +817,20 @@ function showPaymentPopup(isPremium = false) {
 // -----------------------------
 function hidePaymentPopup() {
   const popup = document.getElementById("paymentPopup");
-  if (popup) popup.style.display = "none";
+  if (popup) {
+    popup.classList.add("hidden");
+    popup.style.display = "none";
+  }
 }
 
 // -----------------------------
-// Trigger basic-paid popup (only after free scans exhausted)
+// Trigger basic-paid popup (after free scans exhausted)
 // -----------------------------
 function triggerBasicPaidPopup() {
   if (!pageJustLoaded) {
     showPaymentPopup(false);
   }
 }
-
 
 
 // -----------------------------
@@ -911,6 +913,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
