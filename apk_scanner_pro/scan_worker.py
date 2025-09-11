@@ -3,6 +3,7 @@ import os
 import time
 import json
 from openai import OpenAI
+from datetime import datetime
 
 # --- VirusTotal API ---
 VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY")
@@ -98,6 +99,52 @@ def _fetch_existing_file_report(file_hash):
     return {"status": "error", "message": f"Failed to fetch existing report: {resp.status_code}"}
 
 
+def scan_apk_file(file_path, premium=False, payment_ref=None):
+    """Scan an uploaded APK file with VirusTotal + AI layer."""
+    try:
+        if not VIRUSTOTAL_API_KEY:
+            return {"status": "error", "message": "VirusTotal API key missing."}
+
+        # --- Premium enforcement ---
+        if premium and not payment_ref:
+            return {"status": "error", "message": "❌ Premium scans require a valid payment reference."}
+
+        # --- Upload to VirusTotal ---
+        with open(file_path, "rb") as f:
+            files = {"file": (os.path.basename(file_path), f)}
+            resp = requests.post(VT_SCAN_URL, headers=VT_HEADERS, files=files)
+
+        if resp.status_code == 409:
+            # Duplicate file — fetch existing report by hash
+            file_hash = os.path.basename(file_path)
+            return _fetch_existing_file_report(file_hash)
+
+        if resp.status_code not in (200, 202):
+            return {
+                "status": "error",
+                "message": f"VT file submission failed: {resp.status_code}",
+                "details": resp.text,
+            }
+
+        vt_data = resp.json()
+        analysis_id = vt_data.get("data", {}).get("id")
+        if not analysis_id:
+            return {"status": "error", "message": "No VT file analysis ID", "raw": vt_data}
+
+        # --- Poll until ready ---
+        vt_analysis = _poll_analysis(analysis_id)
+        if "status" in vt_analysis and vt_analysis["status"] == "error":
+            return vt_analysis
+
+        vt_stats = vt_analysis.get("data", {}).get("attributes", {}).get("stats", {}) or {}
+        vt_engines = vt_analysis.get("data", {}).get("attributes", {}).get("results", {}) or {}
+        ai_summary = _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
+        return _normalize_results(vt_engines, vt_stats, ai_summary)
+
+    except Exception as e:
+        return {"status": "error", "message": f"Exception in scan_apk_file: {str(e)}"}
+
+
 def scan_url(target_url, premium=False, payment_ref=None):
     """Scan Play Store link or any URL via VirusTotal + AI, enforce free/basic-paid/premium quota."""
     try:
@@ -156,5 +203,6 @@ def scan_url(target_url, premium=False, payment_ref=None):
 
     except Exception as e:
         return {"status": "error", "message": f"Exception in scan_url: {str(e)}"}
+
 
 
