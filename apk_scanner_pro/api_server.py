@@ -538,8 +538,12 @@ def paid_scan():
     """
     data = request.get_json(silent=True) or {}
     email = data.get("email")
-    payment_ref = data.get("payment_ref")
+    # align key name with frontend ("ref")
+    payment_ref = data.get("payment_ref") or data.get("ref")
     mode = data.get("mode", "basic")  # "basic" (default) or "premium"
+
+    if not email or not payment_ref:
+        return jsonify({"ok": False, "error": "Missing email or payment reference"}), 400
 
     if mode == "premium":
         increment_premium_scans(1, email=email, payment_ref=payment_ref)
@@ -547,6 +551,7 @@ def paid_scan():
     else:
         increment_basic_scans(1, email=email, payment_ref=payment_ref)
         return jsonify({"ok": True, "message": "Basic scan unlocked", "basic_paid": True})
+
 
 
 
@@ -856,6 +861,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
