@@ -762,20 +762,27 @@ function clearPendingPayment() {
 }
 
 // -----------------------------
-// Auto trigger payment when premium checkbox clicked
+// Auto trigger payment popup
 // -----------------------------
-const premiumOption = document.getElementById('premiumOption');
-if (premiumOption) {
-  premiumOption.addEventListener('change', function () {
-    if (this.checked) showPaymentPopup(true); // ✅ premium mode
-  });
-}
+document.addEventListener("DOMContentLoaded", () => {
+  // Premium checkbox
+  const premiumOption = document.getElementById('premiumOption');
+  if (premiumOption) {
+    premiumOption.addEventListener('change', function () {
+      if (this.checked) {
+        showPaymentPopup(true); // ✅ premium mode
+      }
+    });
+  }
 
-// Premium Pay Button (for a dedicated button if you have one)
-const premiumPayBtn = document.getElementById('premiumPayBtn');
-if (premiumPayBtn) {
-  premiumPayBtn.addEventListener('click', () => showPaymentPopup(true));
-}
+  // Premium "Pay & Unlock" button
+  const premiumPayBtn = document.getElementById('premiumPayBtn');
+  if (premiumPayBtn) {
+    premiumPayBtn.addEventListener('click', () => {
+      showPaymentPopup(true); // ✅ force premium popup
+    });
+  }
+});
 
 // -----------------------------
 // Handle quota errors dynamically
@@ -846,6 +853,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
