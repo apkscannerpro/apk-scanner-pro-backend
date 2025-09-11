@@ -236,18 +236,22 @@ def send_report_via_email(
     payment_ref: str = None
 ) -> bool:
     """
-    Send scan results to the user. Premium reports are only sent if
-    BOTH premium=True AND a valid payment_ref is provided.
+    Send scan results to the user.
+    - Free users → basic summary (no PDF)
+    - Basic-paid → same as free, but includes payment_ref in body
+    - Premium → full report + PDF (only if premium=True AND payment_ref provided)
     """
 
-    # 🔒 Enforce premium only with payment_ref
+    # 🔒 Enforce premium requires payment_ref
     if premium and not payment_ref:
-        print(f"⚠️ Premium requested but no payment_ref for {to_email}. Downgrading to free report.")
+        print(f"⚠️ Premium requested but no payment_ref for {to_email}. Downgrading to free/basic-paid.")
         premium = False
 
-    # Generate summary & report based on premium flag
+    # Decide which content to generate
     summary = generate_summary(scan_result, premium=premium)
     report_text = generate_report(scan_result, premium=premium)
+
+    # PDF only for premium
     pdf_buffer = (
         generate_pdf_report(summary, report_text, file_name, scan_result, premium=premium)
         if premium else None
@@ -270,10 +274,68 @@ def send_report_via_email(
         except:
             sha256 = ""
 
+    # === Build Email ===
     msg = MIMEMultipart()
     msg["From"] = f"{COMPANY_NAME} <{sender_email}>"
     msg["To"] = to_email
-    msg["Subject"] = f"{COMPANY_NAME} Report – {file_name} ({verdict})"
+
+    # Dynamic subject line
+    if premium:
+        subject_tier = "Premium"
+    elif payment_ref:
+        subject_tier = "Basic-Paid"
+    else:
+        subject_tier = "Free"
+    msg["Subject"] = f"{COMPANY_NAME} {subject_tier} Report – {file_name} ({verdict})"
+
+    # --- Email Body ---
+    body_lines = [
+        f"Hello,",
+        "",
+        f"Here is your {subject_tier} scan report for: {file_name}",
+        "",
+        f"Verdict: {verdict}",
+        f"SHA256: {sha256}" if sha256 else "",
+        "",
+        "=== Summary ===",
+        summary,
+        ""
+    ]
+
+    # Show payment reference if basic-paid or premium
+    if payment_ref and not premium:
+        body_lines.append(f"Payment Reference (Basic-Paid): {payment_ref}")
+        body_lines.append("")
+    elif premium and payment_ref:
+        body_lines.append(f"Payment Reference (Premium): {payment_ref}")
+        body_lines.append("")
+
+    # Include extra stats (optional for free/basic-paid, full for premium)
+    if premium:
+        body_lines.append("=== Full Report ===")
+        body_lines.append(report_text)
+    else:
+        body_lines.append("For a full detailed report with PDF attachment, please upgrade to Premium.")
+
+    msg.attach(MIMEText("\n".join(body_lines), "plain"))
+
+    # --- Attach PDF for premium ---
+    if premium and pdf_buffer:
+        part = MIMEApplication(pdf_buffer.getvalue(), Name=f"{file_name}_Report.pdf")
+        part["Content-Disposition"] = f'attachment; filename="{file_name}_Report.pdf"'
+        msg.attach(part)
+
+    # --- Send Email ---
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_pass)
+            server.sendmail(sender_email, to_email, msg.as_string())
+        print(f"✅ Report sent to {to_email} ({subject_tier})")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to send email to {to_email}: {e}")
+        return False
 
     # === Branded Plain Text Email Body ===
     plain_body = f"""
@@ -394,6 +456,10 @@ def scan():
         if not email:
             return jsonify({"error": "Email is required"}), 400
 
+        # ✅ Enforce payment reference for premium scans
+        if premium_flag and not payment_ref:
+            return jsonify({"error": "Payment reference is required for premium scans"}), 400
+
         # Handle file upload
         if file:
             filename = secure_filename(file.filename)
@@ -411,15 +477,26 @@ def scan():
         else:
             return jsonify({"error": "No APK file or URL provided"}), 400
 
-        # ✅ Enforce payment_ref when sending
-        send_report_via_email(email, result, file_name,
-                              premium=premium_flag, payment_ref=payment_ref)
+        # ✅ Always pass payment_ref (only used if premium)
+        send_report_via_email(
+            email,
+            result,
+            file_name,
+            premium=premium_flag,
+            payment_ref=payment_ref
+        )
 
-        return jsonify({"status": "success", "result": result,
-                        "premium": premium_flag, "payment_ref": payment_ref})
+        return jsonify({
+            "status": "success",
+            "result": result,
+            "premium": premium_flag,
+            "payment_ref": payment_ref if premium_flag else None
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
 
 
 
