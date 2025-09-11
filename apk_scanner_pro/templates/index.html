@@ -776,11 +776,12 @@ function clearPendingPayment() {
 document.addEventListener("DOMContentLoaded", () => {
   // Premium checkbox
   const premiumOption = document.getElementById('premiumOption');
+  let premiumChecked = false;
+
   if (premiumOption) {
     premiumOption.addEventListener('change', function () {
-      if (this.checked) {
-        showPaymentPopup(true); // ✅ premium mode
-      }
+      premiumChecked = this.checked; // remember if user checked the box
+      // ❌ Do NOT open popup yet
     });
   }
 
@@ -788,7 +789,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const premiumPayBtn = document.getElementById('premiumPayBtn');
   if (premiumPayBtn) {
     premiumPayBtn.addEventListener('click', () => {
-      showPaymentPopup(true); // ✅ force premium popup
+      // ✅ Only open popup if user checked the box
+      if (premiumChecked) {
+        showPaymentPopup(true); // premium mode
+      } else {
+        alert("⚠️ Please check the 'Unlock Premium Report' box first before proceeding.");
+      }
     });
   }
 });
@@ -862,6 +868,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
