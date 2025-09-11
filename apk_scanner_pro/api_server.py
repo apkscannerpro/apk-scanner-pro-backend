@@ -15,7 +15,7 @@ import json
 import csv  # <-- added
 
 # Workers
-from .scan_worker import scan_apk as scan_apk_file, scan_url
+from .scan_worker import scan_file as scan_apk_file, scan_url
 from .report_generator import generate_report, generate_summary
 
 # -------------------------------------------------------------------------------
@@ -824,6 +824,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
