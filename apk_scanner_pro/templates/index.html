@@ -347,13 +347,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       </p>
 
      <!-- Premium Option -->
-    <label style="display:block; margin-top:8px; color:#ccc; font-size:0.95rem; cursor:pointer;">
-       <input type="checkbox" id="premiumOption" style="margin-right:6px;"> 🔒 Unlock Premium Report – (manual payment)
-    </label>
+<label style="display:block; margin-top:8px; color:#ccc; font-size:0.95rem; cursor:pointer;">
+   <input type="checkbox" id="premiumOption" style="margin-right:6px;"> 🔒 Unlock Premium Report – (manual payment)
+</label>
 
-     <button id="premiumPayBtn" style="margin-top:10px; padding:6px 12px; background:#ff6b81; color:white; border:none; border-radius:5px; cursor:pointer;">
-        Pay & Unlock
-     </button>
+<button id="premiumPayBtn" style="margin-top:10px; padding:6px 12px; background:#ff6b81; color:white; border:none; border-radius:5px; cursor:pointer;">
+    Pay & Unlock
+</button>
+
 
     </form>
 
@@ -865,9 +866,7 @@ async function startScan(formData) {
       if (json.premium === true) {
         alert("⚠️ You need to check 'Unlock Premium Report' and click Pay & Unlock to access premium scans.");
       } else if (json.basic_paid === true) {
-        if (!pageJustLoaded) {
-          showPaymentPopup(false); // basic-paid mode
-        }
+        showPaymentPopup(false); // basic-paid mode only if quota exhausted
       }
       return;
     }
@@ -886,6 +885,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
