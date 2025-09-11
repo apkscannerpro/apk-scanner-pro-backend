@@ -238,27 +238,23 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
     Accepts to_email as a keyword-only argument. If called without to_email, will attempt to read
     from scan_result['user_email'].
     """
-    # 🔒 Determine recipient email
+    # Determine recipient email
     if not to_email:
         to_email = scan_result.get("user_email")
     if not to_email:
         print("❌ No recipient email provided. Aborting send_report_via_email.")
         return False
 
-    # 🔒 Enforce premium requires payment_ref
+    # Enforce premium requires payment_ref
     if premium and not payment_ref:
         print(f"⚠️ Premium requested but no payment_ref for {to_email}. Downgrading to free/basic-paid.")
         premium = False
 
-    # Decide which content to generate
+    # Generate content
     summary = generate_summary(scan_result, premium=premium)
     report_text = generate_report(scan_result, premium=premium)
 
-    # PDF only for premium
-    pdf_buffer = (
-        generate_pdf_report(summary, report_text, file_name, scan_result, premium=premium)
-        if premium else None
-    )
+    pdf_buffer = generate_pdf_report(summary, report_text, file_name, scan_result, premium=premium) if premium else None
 
     sender_email = os.getenv("EMAIL_USER")
     sender_pass = os.getenv("EMAIL_PASS")
@@ -266,9 +262,6 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
     smtp_port = int(os.getenv("SMTP_PORT", 587))
 
     verdict = scan_result.get("verdict", "Unknown")
-    vt_stats = scan_result.get("virustotal", {})
-
-    # Build SHA256 if provided
     sha256 = scan_result.get("sha256", "")
     if not sha256 and scan_result.get("file_path"):
         try:
@@ -277,12 +270,11 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
         except:
             sha256 = ""
 
-    # === Build Email ===
+    # Build email
     msg = MIMEMultipart()
     msg["From"] = f"{COMPANY_NAME} <{sender_email}>"
     msg["To"] = to_email
 
-    # Dynamic subject line
     if premium:
         subject_tier = "Premium"
     elif payment_ref:
@@ -291,21 +283,14 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
         subject_tier = "Free"
     msg["Subject"] = f"{COMPANY_NAME} {subject_tier} Report – {file_name} ({verdict})"
 
-    # --- Email Body ---
     body_lines = [
-        f"Hello,",
-        "",
-        f"Here is your {subject_tier} scan report for: {file_name}",
-        "",
+        "Hello,", "",
+        f"Here is your {subject_tier} scan report for: {file_name}", "",
         f"Verdict: {verdict}",
-        f"SHA256: {sha256}" if sha256 else "",
-        "",
-        "=== Summary ===",
-        summary,
-        ""
+        f"SHA256: {sha256}" if sha256 else "", "",
+        "=== Summary ===", summary, ""
     ]
 
-    # Show payment reference if basic-paid or premium
     if payment_ref and not premium:
         body_lines.append(f"Payment Reference (Basic-Paid): {payment_ref}")
         body_lines.append("")
@@ -313,7 +298,6 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
         body_lines.append(f"Payment Reference (Premium): {payment_ref}")
         body_lines.append("")
 
-    # Include extra stats (optional for free/basic-paid, full for premium)
     if premium:
         body_lines.append("=== Full Report ===")
         body_lines.append(report_text)
@@ -322,13 +306,11 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
 
     msg.attach(MIMEText("\n".join(body_lines), "plain"))
 
-    # --- Attach PDF for premium ---
     if premium and pdf_buffer:
         part = MIMEApplication(pdf_buffer.getvalue(), Name=f"{file_name}_Report.pdf")
         part["Content-Disposition"] = f'attachment; filename="{file_name}_Report.pdf"'
         msg.attach(part)
 
-    # --- Send Email ---
     try:
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()
@@ -498,6 +480,7 @@ def scan():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 
