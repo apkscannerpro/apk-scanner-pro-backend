@@ -687,15 +687,16 @@ if (scanForm) {
 });
 
 
+let currentPaymentMode = "basic"; // "basic" or "premium"
+
 // -----------------------------
-// Restore pending payment banner only (do NOT open popup automatically)
+// Restore pending payment banner only (no popup on reload)
 // -----------------------------
 document.addEventListener("DOMContentLoaded", () => {
   const email = localStorage.getItem("paidEmail");
   const ref = localStorage.getItem("paymentRef");
 
   if (email && ref) {
-    // ✅ Show only the top banner, not popup
     const banner = document.getElementById("pendingPaymentBanner");
     const textSpan = document.getElementById("pendingPaymentText");
     if (banner && textSpan) {
@@ -707,7 +708,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // -----------------------------
-// Auto trigger premium popup ONLY if checkbox checked and button clicked
+// Premium checkbox + pay button logic
 // -----------------------------
 document.addEventListener("DOMContentLoaded", () => {
   const premiumOption = document.getElementById('premiumOption');
@@ -716,7 +717,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (premiumOption) {
     premiumOption.addEventListener('change', function () {
-      premiumChecked = this.checked; // remember if user checked
+      premiumChecked = this.checked;
     });
   }
 
@@ -732,13 +733,12 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // -----------------------------
-// Show payment popup function
+// Show payment popup
 // -----------------------------
 function showPaymentPopup(isPremium = false) {
   const popup = document.getElementById("paymentPopup");
   if (!popup) return;
 
-  // Update title and message dynamically
   const title = document.getElementById("paymentTitle");
   const message = document.getElementById("paymentMessage");
 
@@ -762,6 +762,15 @@ function hidePaymentPopup() {
   const popup = document.getElementById("paymentPopup");
   if (popup) popup.style.display = "none";
 }
+
+// -----------------------------
+// Example: Trigger basic-paid popup after free scans exhausted
+// Call this inside your startScan() logic
+// -----------------------------
+function triggerBasicPaidPopup() {
+  showPaymentPopup(false);
+}
+
 
 
 // -----------------------------
@@ -941,6 +950,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
