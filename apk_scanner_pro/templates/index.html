@@ -750,7 +750,7 @@ if (scanForm) {
 
 
 let currentPaymentMode = "basic"; // "basic" or "premium"
-let pageJustLoaded = true;        // ✅ Prevent popup on reload
+let pageJustLoaded = true;        // Prevent popup on reload
 
 // -----------------------------
 // DOMContentLoaded: Initialize event listeners
@@ -758,26 +758,25 @@ let pageJustLoaded = true;        // ✅ Prevent popup on reload
 document.addEventListener("DOMContentLoaded", () => {
   pageJustLoaded = false;
 
-  // Premium checkbox + pay button logic
   const premiumOption = document.getElementById('premiumOption');
   const premiumPayBtn = document.getElementById('premiumPayBtn');
   let premiumChecked = false;
 
+  // ✅ Checkbox triggers premium popup immediately
   if (premiumOption) {
-  premiumOption.addEventListener('change', function () {
-    premiumChecked = this.checked;
+    premiumOption.addEventListener('change', function () {
+      premiumChecked = this.checked;
+      if (premiumChecked) {
+        showPaymentPopup(true);
+      }
+    });
+  }
 
-    // ✅ Trigger premium popup immediately when checked
-    if (premiumChecked) {
-      showPaymentPopup(true);
-    }
-  });
-}
-
+  // ✅ Pay & Unlock button logic
   if (premiumPayBtn) {
     premiumPayBtn.addEventListener('click', () => {
       if (premiumChecked) {
-        showPaymentPopup(true); // premium popup
+        showPaymentPopup(true);
       } else {
         alert("⚠️ Please check the 'Unlock Premium Report' box first before proceeding.");
       }
@@ -794,10 +793,15 @@ function showPaymentPopup(isPremium = false) {
 
   const title = document.getElementById("paymentTitle");
   const message = document.getElementById("paymentMessage");
+  const premiumQuotaEl = document.getElementById('premiumQuota');
 
   if (isPremium) {
-    title.innerHTML = "💎 Upgrade to Premium Scan Report";
-    message.innerHTML = "Get a detailed premium report with advanced malware insights.<br>Price: $15 per scan.";
+    title.innerHTML = "💎 Premium Detailed Report";
+    let quotaText = '';
+    if (premiumQuotaEl) {
+      quotaText = `<br>🎯 ${premiumQuotaEl.textContent}`;
+    }
+    message.innerHTML = `Get a deep analysis report with historical malware lookup, and advanced insights so it can be downloaded safely.<br>Price: $15 per premium scan${quotaText}`;
     currentPaymentMode = "premium";
   } else {
     title.innerHTML = "💳 Upgrade to Paid Scan";
@@ -824,6 +828,7 @@ function triggerBasicPaidPopup() {
     showPaymentPopup(false);
   }
 }
+
 
 // -----------------------------
 // Complete Payment
@@ -890,6 +895,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
