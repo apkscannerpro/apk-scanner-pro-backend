@@ -691,12 +691,27 @@ async function completePayment() {
     return;
   }
 
-  // ✅ Store in localStorage so backend can use later
+  // ✅ Save in localStorage so thank-you page can still show details
   localStorage.setItem("paidEmail", email);
   localStorage.setItem("paymentRef", ref);
   localStorage.setItem("paymentMode", currentPaymentMode);
 
-  // ✅ Show pending payment banner immediately
+  // ✅ Call backend immediately to record unlock
+  try {
+    await fetch("/paid-scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        payment_ref: ref,
+        mode: currentPaymentMode // explicitly pass "basic" or "premium"
+      })
+    });
+  } catch (err) {
+    console.error("Failed to confirm payment with backend:", err);
+  }
+
+  // ✅ Show pending payment banner
   const banner = document.getElementById("pendingPaymentBanner");
   const textSpan = document.getElementById("pendingPaymentText");
   if (banner && textSpan) {
@@ -705,22 +720,7 @@ async function completePayment() {
     banner.style.display = "block";
   }
 
-  // 🔥 Call backend to unlock scan immediately
-  try {
-    await fetch("/paid-scan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: email,
-        ref: ref,
-        mode: currentPaymentMode
-      })
-    });
-  } catch (err) {
-    console.error("Failed to notify backend about paid scan:", err);
-  }
-
-  // redirect only after validation
+  // ✅ Redirect only after validation
   window.location.href = "https://www.apkscannerpro.com/thank-you";
 }
 
@@ -853,6 +853,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
