@@ -151,6 +151,16 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   </div>
 </div>
 
+<!-- Pending Payment Banner -->
+<div id="pendingPaymentBanner" 
+     style="display:none; background:#222; color:#fff; padding:12px; text-align:center; position:fixed; top:0; left:0; width:100%; z-index:998;">
+  <span id="pendingPaymentText"></span>
+  <button onclick="clearPendingPayment()" 
+          style="margin-left:15px; background:#ff4444; border:none; color:#fff; padding:5px 10px; border-radius:5px; cursor:pointer;">
+    ✖ Cancel
+  </button>
+</div>
+  
   
 <!-- Google Tag Manager (noscript) -->
 <noscript>
@@ -561,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // -----------------------------
+// -----------------------------
 // Scan form submission
 // -----------------------------
 const scanForm = document.getElementById('scanForm');
@@ -573,6 +583,14 @@ if (scanForm) {
     const fd = new FormData(e.target);
     const premiumCheckbox = document.getElementById('premiumOption');
     if (premiumCheckbox && premiumCheckbox.checked) fd.append('premium', 'true');
+
+    // ✅ Auto-attach pending payment info if available
+    const paidEmail = localStorage.getItem("paidEmail");
+    const paymentRef = localStorage.getItem("paymentRef");
+    if (paidEmail && paymentRef) {
+      fd.set("email", paidEmail); // override email if needed
+      fd.append("payment_ref", paymentRef);
+    }
 
     const btn = e.target.querySelector('button');
     btn.disabled = true;
@@ -598,6 +616,17 @@ if (scanForm) {
         const email = fd.get("email");
         // keep spinner visible until poll finishes
         pollResult(json.job_id, btn, email);
+
+        // ✅ If we had a pending paymentRef, clear it after success
+        if (paymentRef) {
+          localStorage.removeItem("paidEmail");
+          localStorage.removeItem("paymentRef");
+          localStorage.removeItem("paymentMode");
+
+          const banner = document.getElementById("pendingPaymentBanner");
+          if (banner) banner.style.display = "none";
+        }
+
         if (premiumCheckbox) premiumCheckbox.checked = false;
       } else {
         document.getElementById('loadingSpinner').style.display = "none";
@@ -681,23 +710,60 @@ function showPaymentPopup(isPremium = false) {
   popup.style.display = 'flex';
 }
 
-function completePayment() {
-  const email = document.getElementById('paidEmail').value.trim();
-  const ref = document.getElementById('paymentRef').value.trim();
+<script>
+  // --- existing functions (showPaymentPopup, completePayment, scan handler, etc.) ---
 
-  if (!email || !ref) {
-    alert("⚠️ Please enter both your email and payment reference before continuing.");
-    return;
+  function completePayment() {
+    const email = document.getElementById('paidEmail').value.trim();
+    const ref = document.getElementById('paymentRef').value.trim();
+
+    if (!email || !ref) {
+      alert("⚠️ Please enter both your email and payment reference before continuing.");
+      return;
+    }
+
+    // ✅ Store in localStorage so backend can use later
+    localStorage.setItem("paidEmail", email);
+    localStorage.setItem("paymentRef", ref);
+    localStorage.setItem("paymentMode", currentPaymentMode);
+
+    // ✅ Show pending payment banner immediately (update text span only)
+    const banner = document.getElementById("pendingPaymentBanner");
+    const textSpan = document.getElementById("pendingPaymentText");
+    if (banner && textSpan) {
+      textSpan.innerText = `✅ Pending payment detected for ${email} (Ref: ${ref}). Complete a scan to use it.`;
+      banner.style.display = "block";
+    }
+
+    // redirect only after validation
+    window.location.href = "https://www.apkscannerpro.com/thank-you";
   }
 
-  // ✅ Store in localStorage so backend can use later
-  localStorage.setItem("paidEmail", email);
-  localStorage.setItem("paymentRef", ref);
-  localStorage.setItem("paymentMode", currentPaymentMode);
+  // ✅ Restore banner on reload if payment info exists
+  document.addEventListener("DOMContentLoaded", () => {
+    const email = localStorage.getItem("paidEmail");
+    const ref = localStorage.getItem("paymentRef");
+    if (email && ref) {
+      const banner = document.getElementById("pendingPaymentBanner");
+      const textSpan = document.getElementById("pendingPaymentText");
+      if (banner && textSpan) {
+        textSpan.innerText =
+          `✅ Pending payment detected for ${email} (Ref: ${ref}). Complete a scan to use it.`;
+        banner.style.display = "block";
+      }
+    }
+  });
 
-  // redirect only after validation
-  window.location.href = "https://www.apkscannerpro.com/thank-you";
-}
+  // ✅ Allow manual cancel
+  function clearPendingPayment() {
+    localStorage.removeItem("paidEmail");
+    localStorage.removeItem("paymentRef");
+    localStorage.removeItem("paymentMode");
+    const banner = document.getElementById("pendingPaymentBanner");
+    if (banner) banner.style.display = "none";
+  }
+</script>
+</body>
 
 // -----------------------------
 // Auto trigger payment when premium checkbox clicked
@@ -747,6 +813,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
