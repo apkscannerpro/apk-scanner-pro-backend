@@ -688,29 +688,27 @@ if (scanForm) {
 
 
 let currentPaymentMode = "basic"; // "basic" or "premium"
+let pageJustLoaded = true;        // ✅ new flag to prevent popup on reload
 
 // -----------------------------
-// Restore pending payment banner only (no popup on reload)
+// DOMContentLoaded: Restore banner + initialize event listeners
 // -----------------------------
 document.addEventListener("DOMContentLoaded", () => {
+  pageJustLoaded = false;
+
+  // Restore pending payment banner only
   const email = localStorage.getItem("paidEmail");
   const ref = localStorage.getItem("paymentRef");
-
   if (email && ref) {
     const banner = document.getElementById("pendingPaymentBanner");
     const textSpan = document.getElementById("pendingPaymentText");
     if (banner && textSpan) {
-      textSpan.innerText =
-        `✅ Pending payment detected for ${email} (Ref: ${ref}). Complete a scan to use it.`;
+      textSpan.innerText = `✅ Pending payment detected for ${email} (Ref: ${ref}). Complete a scan to use it.`;
       banner.style.display = "block";
     }
   }
-});
 
-// -----------------------------
-// Premium checkbox + pay button logic
-// -----------------------------
-document.addEventListener("DOMContentLoaded", () => {
+  // Premium checkbox + pay button logic
   const premiumOption = document.getElementById('premiumOption');
   const premiumPayBtn = document.getElementById('premiumPayBtn');
   let premiumChecked = false;
@@ -764,14 +762,14 @@ function hidePaymentPopup() {
 }
 
 // -----------------------------
-// Example: Trigger basic-paid popup after free scans exhausted
-// Call this inside your startScan() logic
+// Trigger basic-paid popup (call inside startScan only!)
 // -----------------------------
 function triggerBasicPaidPopup() {
-  showPaymentPopup(false);
+  // ✅ Prevent popup from showing on page load
+  if (!pageJustLoaded) {
+    showPaymentPopup(false);
+  }
 }
-
-
 
 // -----------------------------
 // Complete Payment
@@ -813,24 +811,8 @@ async function completePayment() {
     banner.style.display = "block";
   }
 
-  hidePaymentPopup(); // hide popup after done
+  hidePaymentPopup();
 }
-
-// -----------------------------
-// Restore banner on reload
-// -----------------------------
-document.addEventListener("DOMContentLoaded", () => {
-  const email = localStorage.getItem("paidEmail");
-  const ref = localStorage.getItem("paymentRef");
-  if (email && ref) {
-    const banner = document.getElementById("pendingPaymentBanner");
-    const textSpan = document.getElementById("pendingPaymentText");
-    if (banner && textSpan) {
-      textSpan.innerText = `✅ Pending payment detected for ${email} (Ref: ${ref}). Complete a scan to use it.`;
-      banner.style.display = "block";
-    }
-  }
-});
 
 // -----------------------------
 // Allow manual cancel
@@ -894,7 +876,9 @@ async function startScan(formData) {
         alert("⚠️ You need to check 'Unlock Premium Report' and click Pay & Unlock to access premium scans.");
       } else if (json.basic_paid === true) {
         // Basic-paid popup (free limit reached)
-        showPaymentPopup(false); // basic-paid mode
+        if (!pageJustLoaded) {
+          showPaymentPopup(false); // basic-paid mode
+        }
       }
       return;
     }
@@ -950,6 +934,7 @@ async function startScan(formData) {
 </script>
 </body>
 </html>
+
 
 
 
