@@ -514,6 +514,10 @@ def refund_policy():
 def thank_you():
     return render_template("thank-you.html")
 
+@app.route('/ads.txt')
+def ads_txt():
+    return app.send_static_file('ads.txt')
+
 @app.route("/paid-scan", methods=["POST"])
 def paid_scan():
     """
@@ -836,6 +840,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
