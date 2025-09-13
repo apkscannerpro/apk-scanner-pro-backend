@@ -219,7 +219,6 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
     # Generate content
     summary = generate_summary(scan_result, premium=premium)
     report_text = generate_report(scan_result, premium=premium)
-
     pdf_buffer = generate_pdf_report(summary, report_text, file_name, scan_result, premium=premium) if premium else None
 
     sender_email = os.getenv("EMAIL_USER")
@@ -241,12 +240,7 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
     msg["From"] = f"{COMPANY_NAME} <{sender_email}>"
     msg["To"] = to_email
 
-    if premium:
-        subject_tier = "Premium"
-    elif payment_ref:
-        subject_tier = "Basic-Paid"
-    else:
-        subject_tier = "Free"
+    subject_tier = "Premium" if premium else "Basic-Paid" if payment_ref else "Free"
     msg["Subject"] = f"{COMPANY_NAME} {subject_tier} Report – {file_name} ({verdict})"
 
     body_lines = [
@@ -258,11 +252,9 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
     ]
 
     if payment_ref and not premium:
-        body_lines.append(f"Payment Reference (Basic-Paid): {payment_ref}")
-        body_lines.append("")
+        body_lines.append(f"Payment Reference (Basic-Paid): {payment_ref}\n")
     elif premium and payment_ref:
-        body_lines.append(f"Payment Reference (Premium): {payment_ref}")
-        body_lines.append("")
+        body_lines.append(f"Payment Reference (Premium): {payment_ref}\n")
 
     if premium:
         body_lines.append("=== Full Report ===")
@@ -272,17 +264,17 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
 
     msg.attach(MIMEText("\n".join(body_lines), "plain"))
 
+    # Attach PDF if premium
     if premium and pdf_buffer:
         part = MIMEApplication(pdf_buffer.getvalue(), Name=f"{file_name}_Report.pdf")
         part["Content-Disposition"] = f'attachment; filename="{file_name}_Report.pdf"'
         msg.attach(part)
 
-        # Attach subscriber logs (always include in email, regardless of tier)
+    # Attach subscriber JSON + CSV (optional)
     try:
         subs_dir = os.getenv("SUBSCRIBERS_PATH", "apk_scanner_pro/Subscribers")
         subs_json = os.path.join(subs_dir, "subscribers.json")
         subs_csv = os.path.join(subs_dir, "subscribers.csv")
-
         for fpath in (subs_json, subs_csv):
             if os.path.exists(fpath):
                 with open(fpath, "rb") as f:
@@ -292,16 +284,24 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
     except Exception as e:
         print(f"⚠️ Could not attach subscriber files: {e}")
 
+    # Send email and save lead
     try:
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()
             server.login(sender_email, sender_pass)
             server.sendmail(sender_email, to_email, msg.as_string())
+
         print(f"✅ Report sent to {to_email} ({subject_tier})")
+
+        # Save lead in Subscribers folder + push to GitHub
+        from .lead_manager import _save_lead
+        _save_lead(name="", email=to_email, source="report")
+
         return True
     except Exception as e:
         print(f"❌ Failed to send email to {to_email}: {e}")
         return False
+        
 
     # === Branded Plain Text Email Body ===
     plain_body = f"""
@@ -446,6 +446,7 @@ def scan():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 
