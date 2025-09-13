@@ -18,6 +18,7 @@ import hashlib
 
 # Import scan functions
 from . import scan_worker
+from apk_scanner_pro.api_server import _save_lead
 
 # Load OpenAI key
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -462,6 +463,7 @@ def scan():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 
