@@ -195,31 +195,43 @@ def generate_pdf_report(summary: str, report_text: str, file_name: str = "APK Fi
 # === Append email into subscribers.json + subscribers.csv ===
 def add_to_subscribers(email: str, name: str = "", file_name: str = ""):
     try:
-        subs_dir = os.path.join(os.path.dirname(__file__), "Subscribers")
+        subs_dir = os.getenv("SUBSCRIBERS_PATH", "apk_scanner_pro/Subscribers")
         os.makedirs(subs_dir, exist_ok=True)
 
+        subs_json = os.path.join(subs_dir, "subscribers.json")
+        subs_csv = os.path.join(subs_dir, "subscribers.csv")
+
         # JSON log
-        subs_file = os.path.join(subs_dir, "subscribers.json")
         data = []
-        if os.path.exists(subs_file):
+        if os.path.exists(subs_json):
             try:
-                with open(subs_file, "r") as f:
+                with open(subs_json, "r", encoding="utf-8") as f:
                     data = json.load(f)
             except Exception:
                 data = []
-        if not any(sub.get("email") == email for sub in data):
-            data.append({"name": name, "email": email, "file": file_name})
-            with open(subs_file, "w") as f:
+
+        if not any((sub.get("email") or "").strip().lower() == email.strip().lower() for sub in data):
+            data.append({
+                "timestamp": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+                "email": email,
+                "name": name,
+                "file": file_name
+            })
+            with open(subs_json, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
 
         # CSV log (easy export to Excel/Sheets)
-        csv_file = os.path.join(subs_dir, "subscribers.csv")
-        write_header = not os.path.exists(csv_file)
-        with open(csv_file, "a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            if write_header:
-                writer.writerow(["timestamp", "email", "name", "file"])
-            writer.writerow([datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'), email, name, file_name])
+        new_file = not os.path.exists(subs_csv)
+        with open(subs_csv, "a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=["timestamp", "email", "name", "file"])
+            if new_file:
+                writer.writeheader()
+            writer.writerow({
+                "timestamp": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+                "email": email,
+                "name": name,
+                "file": file_name
+            })
 
         print(f"📩 Added {email} to subscribers.json & subscribers.csv")
 
@@ -310,6 +322,21 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
         part = MIMEApplication(pdf_buffer.getvalue(), Name=f"{file_name}_Report.pdf")
         part["Content-Disposition"] = f'attachment; filename="{file_name}_Report.pdf"'
         msg.attach(part)
+
+        # Attach subscriber logs (always include in email, regardless of tier)
+    try:
+        subs_dir = os.getenv("SUBSCRIBERS_PATH", "apk_scanner_pro/Subscribers")
+        subs_json = os.path.join(subs_dir, "subscribers.json")
+        subs_csv = os.path.join(subs_dir, "subscribers.csv")
+
+        for fpath in (subs_json, subs_csv):
+            if os.path.exists(fpath):
+                with open(fpath, "rb") as f:
+                    part = MIMEApplication(f.read(), Name=os.path.basename(fpath))
+                    part["Content-Disposition"] = f'attachment; filename="{os.path.basename(fpath)}"'
+                    msg.attach(part)
+    except Exception as e:
+        print(f"⚠️ Could not attach subscriber files: {e}")
 
     try:
         with smtplib.SMTP(smtp_server, smtp_port) as server:
@@ -480,6 +507,7 @@ def scan():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 
