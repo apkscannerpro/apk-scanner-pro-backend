@@ -344,22 +344,28 @@ def _init_repo():
     email = os.getenv("GITHUB_EMAIL", "support@apkscannerpro.com")
 
     try:
-        # If no .git folder → fresh init
+        # If no .git folder, init
         if not os.path.exists(".git"):
             subprocess.run(["git", "init"], check=True)
             subprocess.run(["git", "checkout", "-b", branch], check=True)
             subprocess.run(["git", "remote", "add", "origin", repo_url], check=True)
+        else:
+            # If origin doesn’t exist, add it
+            remotes = subprocess.run(
+                ["git", "remote"], capture_output=True, text=True, check=True
+            ).stdout.split()
+            if "origin" not in remotes:
+                subprocess.run(["git", "remote", "add", "origin", repo_url], check=True)
+            else:
+                subprocess.run(["git", "remote", "set-url", "origin", repo_url], check=True)
 
-        # Always reset config on container restart
+        # Always reset config in case container restarts
         subprocess.run(["git", "config", "--global", "user.name", user], check=True)
         subprocess.run(["git", "config", "--global", "user.email", email], check=True)
-        subprocess.run(["git", "remote", "set-url", "origin", repo_url], check=True)
 
         print("✅ Repo initialized & remote set")
     except subprocess.CalledProcessError as e:
         print(f"⚠️ Repo init failed: {e}")
-    except Exception as e:
-        print(f"⚠️ Unexpected repo init error: {e}")
 
 
 # Leads file write lock
@@ -896,6 +902,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
