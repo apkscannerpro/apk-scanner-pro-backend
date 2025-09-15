@@ -30,11 +30,12 @@
   <meta name="twitter:description" content="Compare top Android antivirus apps and protect your APKs with our AI malware scanner. Norton, Bitdefender, McAfee & more.">
   <meta name="twitter:image" content="https://apkscannerpro.com/static/logo.png">
 
-  <!-- Favicon & Pinned Site Icon for Google Rich Results -->
-  <link rel="icon" href="https://apkscannerpro.com/static/favicon.ico" sizes="32x32" type="image/x-icon">
-  <link rel="shortcut icon" href="https://apkscannerpro.com/static/favicon.ico" type="image/x-icon">
-  <link rel="apple-touch-icon" href="https://apkscannerpro.com/static/logo.png">
-  <meta name="theme-color" content="#0a0a0a">
+    <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon"/>
+  <meta name="theme-color" content="#00BFFF">
 
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TRVNTQ0ZT4"></script>
