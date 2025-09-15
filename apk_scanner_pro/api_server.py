@@ -495,6 +495,10 @@ def apk_virus_signs():
 def scan_apk_files_online():
     return render_template("scan-apk-files-online.html")
 
+@app.route("/blog")
+def blog():
+    return render_template("blog.html")
+
 @app.route("/pricing")
 def pricing():
     return render_template("pricing.html")
@@ -585,6 +589,7 @@ def sitemap_xml():
         {"loc": "https://www.apkscannerpro.com/about-us"},
         {"loc": "https://www.apkscannerpro.com/apk-virus-signs"},
         {"loc": "https://www.apkscannerpro.com/scan-apk-files-online"},
+        {"loc": "https://www.apkscannerpro.com/blog", "priority": "0.8"},
     ]
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -851,6 +856,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
