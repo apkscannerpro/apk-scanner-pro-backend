@@ -483,6 +483,18 @@ def home():
 def blog_antivirus():
     return render_template("best-antivirus-for-android.html")
 
+@app.route("/about-us")
+def about_us():
+    return render_template("about-us.html")
+
+@app.route("/apk-virus-signs")
+def apk_virus_signs():
+    return render_template("apk-virus-signs.html")
+
+@app.route("/scan-apk-files-online")
+def scan_apk_files_online():
+    return render_template("scan-apk-files-online.html")
+
 @app.route("/pricing")
 def pricing():
     return render_template("pricing.html")
@@ -568,6 +580,9 @@ def sitemap_xml():
         {"loc": "https://www.apkscannerpro.com/refund-policy"},
         {"loc": "https://www.apkscannerpro.com/thank-you"},
         {"loc": "https://www.apkscannerpro.com/best-antivirus-for-android"},
+        {"loc": "https://www.apkscannerpro.com/about-us"},
+        {"loc": "https://www.apkscannerpro.com/apk-virus-signs"},
+        {"loc": "https://www.apkscannerpro.com/scan-apk-files-online"},
     ]
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -832,6 +847,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
