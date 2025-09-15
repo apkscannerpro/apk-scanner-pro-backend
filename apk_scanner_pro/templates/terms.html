@@ -25,11 +25,12 @@
   <meta name="twitter:description" content="Read APK Scanner Pro’s Terms of Service: rights, responsibilities, and trusted AI malware scanning rules.">
   <meta name="twitter:image" content="https://apkscannerpro.com/static/logo.png">
 
-  <!-- Favicon & Pinned Site Icon -->
-  <link rel="icon" href="https://apkscannerpro.com/static/favicon.ico" sizes="32x32" type="image/x-icon">
-  <link rel="shortcut icon" href="https://apkscannerpro.com/static/favicon.ico" type="image/x-icon">
-  <link rel="apple-touch-icon" href="https://apkscannerpro.com/static/logo.png">
-  <meta name="theme-color" content="#0a0a0a">
+    <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon"/>
+  <meta name="theme-color" content="#00BFFF">
 
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TRVNTQ0ZT4"></script>
@@ -201,6 +202,7 @@ After this 7-day period, <strong>all sales are final</strong> and non-refundable
   </footer>
 </body>
 </html>
+
 
 
 
