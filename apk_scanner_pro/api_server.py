@@ -582,7 +582,6 @@ def sitemap_xml():
         {"loc": "https://www.apkscannerpro.com/refund-policy"},
         {"loc": "https://www.apkscannerpro.com/thank-you"},
         {"loc": "https://www.apkscannerpro.com/best-antivirus-for-android"},
-        # ✅ Newly added static/blog pages
         {"loc": "https://www.apkscannerpro.com/about-us"},
         {"loc": "https://www.apkscannerpro.com/apk-virus-signs"},
         {"loc": "https://www.apkscannerpro.com/scan-apk-files-online"},
@@ -852,6 +851,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
