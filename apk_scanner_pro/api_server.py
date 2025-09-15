@@ -571,6 +571,8 @@ Allow: /
 # Dynamic Sitemap.xml
 @app.route("/sitemap.xml")
 def sitemap_xml():
+    today = datetime.utcnow().date().isoformat()  # YYYY-MM-DD
+
     pages = [
         {"loc": "https://www.apkscannerpro.com/", "priority": "1.0"},
         {"loc": "https://www.apkscannerpro.com/home", "priority": "0.9"},
@@ -580,6 +582,7 @@ def sitemap_xml():
         {"loc": "https://www.apkscannerpro.com/refund-policy"},
         {"loc": "https://www.apkscannerpro.com/thank-you"},
         {"loc": "https://www.apkscannerpro.com/best-antivirus-for-android"},
+        # ✅ Newly added static/blog pages
         {"loc": "https://www.apkscannerpro.com/about-us"},
         {"loc": "https://www.apkscannerpro.com/apk-virus-signs"},
         {"loc": "https://www.apkscannerpro.com/scan-apk-files-online"},
@@ -590,12 +593,14 @@ def sitemap_xml():
     for page in pages:
         xml += "  <url>\n"
         xml += f"    <loc>{page['loc']}</loc>\n"
+        xml += f"    <lastmod>{today}</lastmod>\n"
         if "priority" in page:
             xml += f"    <priority>{page['priority']}</priority>\n"
         xml += "  </url>\n"
     xml += "</urlset>\n"
 
     return Response(xml, mimetype="application/xml")
+    
 
 @app.before_request
 def enforce_https_and_www():
@@ -847,6 +852,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
