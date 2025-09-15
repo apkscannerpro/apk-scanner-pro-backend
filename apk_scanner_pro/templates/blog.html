@@ -68,7 +68,7 @@
     header h1 {
       margin: 0;
       font-size: 2rem;
-      color: #00ffcc;
+      color: #00bfff; /* sky blue branding */
     }
     .blog-list {
       max-width: 800px;
@@ -85,7 +85,7 @@
     .blog-card h2 {
       margin-top: 0;
       font-size: 1.5rem;
-      color: #00ffcc;
+      color: #00bfff; /* sky blue branding */
     }
     .blog-card p {
       margin: 0.5rem 0 1rem;
@@ -93,14 +93,57 @@
     }
     .blog-card a {
       color: #fff;
-      background: #00cc88;
+      background: #00bfff;
       padding: 0.5rem 1rem;
       border-radius: 8px;
       text-decoration: none;
       font-weight: bold;
     }
     .blog-card a:hover {
-      background: #00ffaa;
+      background: #33ccff;
+    }
+    .cta {
+      text-align: center;
+      margin: 2rem 0;
+    }
+    .cta a {
+      display: inline-block;
+      margin: 0.5rem;
+      padding: 0.7rem 1.2rem;
+      background: #00bfff;
+      color: #fff;
+      font-weight: bold;
+      text-decoration: none;
+      border-radius: 8px;
+    }
+    .cta a:hover {
+      background: #33ccff;
+    }
+    .social-icons {
+      text-align: center;
+      margin: 2rem 0;
+    }
+    .social-icons a img {
+      width: 40px;
+      margin: 0 10px;
+      transition: transform 0.2s;
+    }
+    .social-icons a img:hover {
+      transform: scale(1.1);
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      background: #111;
+      font-size: 0.9rem;
+      color: #bbb;
+    }
+    footer a {
+      color: #00bfff;
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -127,24 +170,29 @@
       <a href="/scan-apk-files-online">Read More</a>
     </div>
   </div>
-</body>
-</html>
 
-<div class="cta">
+  <!-- CTA Buttons -->
+  <div class="cta">
     <a href="https://www.apkscannerpro.com/">Scan APK Now</a>
     <a href="https://www.apkscannerpro.com/pricing">View Pricing</a>
     <a href="https://www.norton.com/" target="_blank" rel="nofollow">Get Norton Antivirus</a>
   </div>
-</section>
 
-<div class="social-icons">
-  <a href="https://www.instagram.com/apkscannerpro/" target="_blank"><img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram"></a>
-  <a href="https://www.tiktok.com/@apkscanner" target="_blank"><img src="https://cdn-icons-png.flaticon.com/512/3046/3046127.png" alt="TikTok"></a>
-</div>
+  <!-- Social Icons -->
+  <div class="social-icons">
+    <a href="https://www.instagram.com/apkscannerpro/" target="_blank">
+      <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram">
+    </a>
+    <a href="https://www.tiktok.com/@apkscanner" target="_blank">
+      <img src="https://cdn-icons-png.flaticon.com/512/3046/3046127.png" alt="TikTok">
+    </a>
+  </div>
 
-<footer>
-  <p>© 2025 APK Scanner Pro. All rights reserved. | <a href="/privacy" style="color:#bbb;">Privacy Policy</a></p>
-</footer>
-
+  <!-- Footer -->
+  <footer>
+    <p>© 2025 APK Scanner Pro. All rights reserved. | 
+      <a href="/privacy">Privacy Policy</a>
+    </p>
+  </footer>
 </body>
 </html>
