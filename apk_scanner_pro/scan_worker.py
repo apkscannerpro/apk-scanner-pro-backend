@@ -14,7 +14,7 @@ VT_HEADERS = {"x-apikey": VIRUSTOTAL_API_KEY}
 
 # --- Bitdefender Affiliate (no API, just link) ---
 BITDEFENDER_AFFILIATE_LINK = (
-    "https://www.bitdefender.com/site/view/trial.html?affid=12345"
+    "https://www.bitdefender.com/"
 )  # replace with your affiliate link
 
 # --- AI Layer ---
@@ -307,6 +307,7 @@ def scan_url(target_url, premium=False, payment_ref=None):
     except Exception as e:
         print(f"[ERROR] Exception in scan_url: {e}")
         return {"status": "error", "message": f"Exception in scan_url: {str(e)}"}
+
 
 
 
