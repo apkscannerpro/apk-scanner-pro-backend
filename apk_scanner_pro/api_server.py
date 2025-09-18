@@ -403,44 +403,65 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
     """
     Handles email sending and scan result processing.
     Auto-detects quota & payment status.
+    Ensures email is always attempted and errors do not block execution.
     """
-    # SAFEGUARD: ensure scan_result is always a dict
+    # --- Ensure scan_result is always a dict ---
     if not scan_result or not isinstance(scan_result, dict):
-        scan_result = {"error": "Scan failed", "success": False}
+        scan_result = {"verdict": "Unknown", "virustotal": {}, "message": "Scan result missing"}
 
-    if "error" in scan_result:
-        return {"error": scan_result.get("error", "Scan failed"), "success": False, "email": user_email}
+    # If scan_result contains error, log but continue
+    if scan_result.get("status") == "error" or "error" in scan_result:
+        print(f"[WARN] Scan returned error: {scan_result.get('message', scan_result.get('error'))}")
+        scan_result.setdefault("verdict", "Unknown")
+        scan_result.setdefault("virustotal", {})
 
-    # --- Determine scan type ---
+    # --- Determine free vs basic_paid ---
     if not premium and not basic_paid:
-        used = get_used_scans()
-        FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "50"))
-        if used.get("free", 0) >= FREE_LIMIT:
-            basic_paid = True
-            payment_ref = "basic_paid"
+        try:
+            used = get_used_scans()
+            FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "50"))
+            if used.get("free", 0) >= FREE_LIMIT:
+                basic_paid = True
+                payment_ref = "basic_paid"
+        except Exception as e:
+            print(f"[WARN] Could not check free scan usage: {e}")
 
+    # Premium scan requires payment_ref
     if premium and not payment_ref:
-        return {"error": "Premium scan requires payment reference.", "success": False, "email": user_email}
+        print(f"[WARN] Premium requested but no payment_ref, downgrading to free/basic-paid.")
+        premium = False
 
-    # --- Send email based on scan type ---
-    email_sent = send_report_via_email(
-        email_to=user_email,
-        scan_result=scan_result,
-        file_name_or_url=file_name_or_url,
-        premium=premium
-    )
-    print(f"[DEBUG] Email sent status: {email_sent} for {user_email}")
+    # --- Send email safely ---
+    email_sent = False
+    try:
+        email_sent = send_report_via_email(
+            to_email=user_email,
+            scan_result=scan_result,
+            file_name=file_name_or_url or "APK File",
+            premium=premium,
+            payment_ref=payment_ref
+        )
+        print(f"[DEBUG] Email sent status: {email_sent} to {user_email}")
+    except Exception as e:
+        print(f"[ERROR] Failed to send email to {user_email}: {e}")
 
-    # --- Save lead ---
-    _save_lead(name="", email=user_email, source="scan_report")
-    print(f"[DEBUG] Lead saved for {user_email}")
+    # --- Save lead safely ---
+    try:
+        _save_lead(name="", email=user_email, source="scan_report")
+        print(f"[DEBUG] Lead saved for {user_email}")
+    except Exception as e:
+        print(f"[WARN] Failed to save lead: {e}")
 
+    # --- Return safe result ---
     return {
         "success": email_sent,
         "email": user_email,
         "premium": premium,
-        "basic_paid": basic_paid
+        "basic_paid": basic_paid,
+        "verdict": scan_result.get("verdict", "Unknown"),
+        "message": scan_result.get("message", "")
     }
+
 
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
@@ -930,6 +951,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
