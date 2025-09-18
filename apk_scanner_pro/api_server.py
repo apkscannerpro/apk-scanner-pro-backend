@@ -404,7 +404,11 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
     Handles email sending and scan result processing.
     Auto-detects quota & payment status.
     """
-    if isinstance(scan_result, dict) and "error" in scan_result:
+    # SAFEGUARD: ensure scan_result is always a dict
+    if not scan_result or not isinstance(scan_result, dict):
+        scan_result = {"error": "Scan failed", "success": False}
+
+    if "error" in scan_result:
         return {"error": scan_result.get("error", "Scan failed"), "success": False, "email": user_email}
 
     # --- Determine scan type ---
@@ -425,9 +429,11 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
         file_name_or_url=file_name_or_url,
         premium=premium
     )
+    print(f"[DEBUG] Email sent status: {email_sent} for {user_email}")
 
     # --- Save lead ---
     _save_lead(name="", email=user_email, source="scan_report")
+    print(f"[DEBUG] Lead saved for {user_email}")
 
     return {
         "success": email_sent,
@@ -435,6 +441,7 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
         "premium": premium,
         "basic_paid": basic_paid
     }
+
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
     try:
@@ -462,6 +469,7 @@ def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premiu
         try:
             if tmp_path and os.path.exists(tmp_path):
                 os.remove(tmp_path)
+                print(f"[DEBUG] Temp file deleted: {tmp_path}")
         except Exception as e:
             print(f"[WARN] Failed to delete tmp file {tmp_path}: {e}")
 
@@ -472,14 +480,12 @@ def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premiu
             local = download_apk_to_tmp(url_param)
             try:
                 scan_result = scan_apk_file(local, premium=premium, payment_ref=payment_ref)
-
-                # DEBUG: log scan result
                 print(f"[DEBUG] URL file scan result for {file_name_or_url or url_param}: {scan_result}")
-
             finally:
                 try:
                     if os.path.exists(local):
                         os.remove(local)
+                        print(f"[DEBUG] Temp file deleted: {local}")
                 except Exception as e:
                     print(f"[WARN] Failed to delete tmp file {local}: {e}")
         else:
@@ -916,6 +922,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
