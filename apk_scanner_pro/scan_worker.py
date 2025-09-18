@@ -141,35 +141,18 @@ def _sha256_file(file_path):
 
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
-    """
-    Handles scanning an uploaded APK file.
-    - Safe for VirusTotal API failures
-    - Always returns a dict compatible with _finalize_scan
-    - Auto-sends email report
-    - Cleans up temp files
-    """
-    scan_result = {"verdict": "Unknown", "virustotal": {}}
-
     try:
-        print(f"[DEBUG] Starting file scan for {file_name_or_url}, premium={premium}, basic_paid={basic_paid}")
-        scan_result = scan_apk_file(tmp_path, premium=premium, payment_ref=payment_ref)
-        print(f"[DEBUG] Scan result received: {scan_result}")
-
-    except Exception as e:
-        print(f"[ERROR] Exception during scan_apk_file for {file_name_or_url}: {e}")
-        scan_result = {"verdict": "Unknown", "virustotal": {}, "note": f"Scan exception: {str(e)}"}
-
-    finally:
-        # Ensure temp file is removed
+        scan_result = {}
         try:
-            if tmp_path and os.path.exists(tmp_path):
-                os.remove(tmp_path)
-                print(f"[DEBUG] Temporary file removed: {tmp_path}")
+            scan_result = scan_apk_file(tmp_path, premium=premium, payment_ref=payment_ref)
+            print(f"[DEBUG] File scan raw result for {file_name_or_url}: {scan_result}")
         except Exception as e:
-            print(f"[ERROR] Failed to remove temp file: {e}")
+            print(f"[ERROR] scan_apk_file failed for {file_name_or_url}: {e}")
+            scan_result = {"status": "error", "message": f"scan_apk_file exception: {str(e)}"}
 
-    # Finalize scan and send email safely
-    try:
+        if not scan_result or not isinstance(scan_result, dict):
+            scan_result = {"verdict": "Unknown", "virustotal": {}}
+
         return _finalize_scan(
             scan_result,
             user_email,
@@ -178,11 +161,56 @@ def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premiu
             payment_ref=payment_ref,
             basic_paid=basic_paid
         )
-    except Exception as e:
-        print(f"[ERROR] Exception in _finalize_scan for {file_name_or_url}: {e}")
-        # Fallback dict to ensure safe return
-        return {"success": False, "email": user_email, "premium": premium, "basic_paid": basic_paid, "note": f"_finalize_scan failed: {str(e)}"}
+    finally:
+        try:
+            if tmp_path and os.path.exists(tmp_path):
+                os.remove(tmp_path)
+                print(f"[DEBUG] Temp file deleted: {tmp_path}")
+            elif tmp_path:
+                print(f"[WARN] Temp file not found for deletion: {tmp_path}")
+        except Exception as e:
+            print(f"[WARN] Failed to delete tmp file {tmp_path}: {e}")
 
+
+def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
+    scan_result = {}
+    try:
+        if is_direct_apk_url(url_param):
+            local = download_apk_to_tmp(url_param)
+            try:
+                scan_result = scan_apk_file(local, premium=premium, payment_ref=payment_ref)
+                print(f"[DEBUG] URL file scan result for {file_name_or_url or url_param}: {scan_result}")
+            finally:
+                try:
+                    if os.path.exists(local):
+                        os.remove(local)
+                        print(f"[DEBUG] Temp file deleted: {local}")
+                    else:
+                        print(f"[WARN] Temp file not found for deletion: {local}")
+                except Exception as e:
+                    print(f"[WARN] Failed to delete tmp file {local}: {e}")
+        else:
+            try:
+                scan_result = scan_url(url_param, premium=premium, payment_ref=payment_ref)
+                print(f"[DEBUG] URL scan result for {file_name_or_url or url_param}: {scan_result}")
+            except Exception as e:
+                print(f"[ERROR] scan_url failed for {url_param}: {e}")
+                scan_result = {"status": "error", "message": f"scan_url exception: {str(e)}"}
+
+        if not scan_result or not isinstance(scan_result, dict):
+            scan_result = {"verdict": "Unknown", "virustotal": {}}
+
+        return _finalize_scan(
+            scan_result,
+            user_email,
+            file_name_or_url=file_name_or_url or url_param,
+            premium=premium,
+            payment_ref=payment_ref,
+            basic_paid=basic_paid
+        )
+    except Exception as e:
+        print(f"[ERROR] _scan_job_url failed totally for {url_param}: {e}")
+        return {"verdict": "Unknown", "virustotal": {}}
 
 
 def scan_apk_file(file_path, premium=False, payment_ref=None):
@@ -279,6 +307,7 @@ def scan_url(target_url, premium=False, payment_ref=None):
     except Exception as e:
         print(f"[ERROR] Exception in scan_url: {e}")
         return {"status": "error", "message": f"Exception in scan_url: {str(e)}"}
+
 
 
 
