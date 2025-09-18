@@ -115,37 +115,6 @@ def scan_apk_file(file_path, premium=False, payment_ref=None):
         if not VIRUSTOTAL_API_KEY:
             return {"status": "error", "message": "VirusTotal API key missing."}
 
-        # --- Premium enforcement ---
-        if premium and not payment_ref:
-            return {"status": "error", "message": "❌ Premium scans require a valid payment reference."}
-
-        # --- Free / Basic-paid enforcement (ENV-controlled) ---
-        scans_file = os.path.join(os.path.dirname(__file__), "scans.json")
-        scans_data = {}
-        if os.path.exists(scans_file):
-            try:
-                with open(scans_file, "r") as f:
-                    scans_data = json.load(f)
-            except Exception:
-                scans_data = {}
-
-        today = datetime.utcnow().strftime("%Y-%m-%d")
-        free_scans_today = scans_data.get(today, 0)
-        FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", 50))  # <- ENV-controlled
-
-        if not premium:
-            if free_scans_today >= FREE_LIMIT:
-                # require $1 basic-paid
-                if not payment_ref:
-                    return {"status": "error", "message": "Free scan limit reached. Please pay $1 to continue."}
-            else:
-                scans_data[today] = free_scans_today + 1
-                # Thread-safe write
-                lock = threading.Lock()
-                with lock:
-                    with open(scans_file, "w") as f:
-                        json.dump(scans_data, f)
-
         # --- Upload to VirusTotal ---
         with open(file_path, "rb") as f:
             files = {"file": (os.path.basename(file_path), f)}
@@ -176,54 +145,21 @@ def scan_apk_file(file_path, premium=False, payment_ref=None):
         vt_stats = vt_analysis.get("data", {}).get("attributes", {}).get("stats", {}) or {}
         vt_engines = vt_analysis.get("data", {}).get("attributes", {}).get("results", {}) or {}
         ai_summary = _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
-
         return _normalize_results(vt_engines, vt_stats, ai_summary)
 
     except Exception as e:
-        print(f"[ERROR] scan_apk_file failed for {file_path}: {e}")
         return {"status": "error", "message": f"Exception in scan_apk_file: {str(e)}"}
 
 
-
 def scan_url(target_url, premium=False, payment_ref=None):
-    """Scan Play Store link or any URL via VirusTotal + AI, enforce free/basic-paid/premium quota."""
+    """Scan Play Store link or any URL via VirusTotal + AI."""
     try:
         if not VIRUSTOTAL_API_KEY:
             return {"status": "error", "message": "VirusTotal API key missing."}
 
-        # --- Premium enforcement ---
-        if premium and not payment_ref:
-            return {"status": "error", "message": "❌ Premium scans require a valid payment reference."}
-
+        # Validate URL format
         if "play.google.com/store/apps/details?id=" not in target_url:
             return {"status": "error", "message": "Only valid Play Store URLs are allowed."}
-
-        # --- Free / Basic-paid enforcement ---
-        scans_file = os.path.join(os.path.dirname(__file__), "scans.json")
-        scans_data = {}
-        if os.path.exists(scans_file):
-            try:
-                with open(scans_file, "r") as f:
-                    scans_data = json.load(f)
-            except Exception:
-                scans_data = {}
-
-        today = datetime.utcnow().strftime("%Y-%m-%d")
-        free_scans_today = scans_data.get(today, 0)
-        FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", 50))  # <- ENV controlled
-
-        if not premium:
-            if free_scans_today >= FREE_LIMIT:
-                # require $1 basic-paid
-                if not payment_ref:
-                    return {"status": "error", "message": "Free scan limit reached. Please pay $1 to continue."}
-            else:
-                scans_data[today] = free_scans_today + 1
-                # Thread-safe write
-                lock = threading.Lock()
-                with lock:
-                    with open(scans_file, "w") as f:
-                        json.dump(scans_data, f)
 
         # --- Submit URL to VirusTotal ---
         url_resp = requests.post(VT_URL_SCAN, headers=VT_HEADERS, data={"url": target_url})
@@ -245,7 +181,6 @@ def scan_url(target_url, premium=False, payment_ref=None):
         return _normalize_results(vt_engines, vt_stats, ai_summary)
 
     except Exception as e:
-        print(f"[ERROR] scan_url failed for {target_url}: {e}")
         return {"status": "error", "message": f"Exception in scan_url: {str(e)}"}
 
 
