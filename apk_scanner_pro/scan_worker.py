@@ -180,7 +180,7 @@ def scan_url(target_url, premium=False, payment_ref=None):
 
         today = datetime.utcnow().strftime("%Y-%m-%d")
         free_scans_today = scans_data.get(today, 0)
-        FREE_LIMIT = 200
+        FREE_LIMIT = 50
 
         if not premium:
             if free_scans_today >= FREE_LIMIT:
@@ -213,3 +213,4 @@ def scan_url(target_url, premium=False, payment_ref=None):
 
     except Exception as e:
         return {"status": "error", "message": f"Exception in scan_url: {str(e)}"}
+
