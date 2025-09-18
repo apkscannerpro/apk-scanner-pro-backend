@@ -24,7 +24,7 @@ from apk_scanner_pro.lead_manager import _save_lead
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # === Bitdefender affiliate link ===
-BITDEFENDER_AFFILIATE_LINK = scan_worker.BITDEFENDER_AFFILIATE_LINK
+https://www.bitdefender.com/ = scan_worker.https://www.bitdefender.com/
 
 # === Branding constants ===
 COMPANY_NAME = "APK Scanner Pro"
@@ -449,21 +449,5 @@ def scan():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
