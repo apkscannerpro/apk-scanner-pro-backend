@@ -696,6 +696,12 @@ def scan_stats():
 @app.route("/scan-async", methods=["POST"])
 def scan_async():
     try:
+        # -----------------------------
+        # Ensure upload directory exists
+        # -----------------------------
+        if not os.path.exists(UPLOAD_DIR):
+            os.makedirs(UPLOAD_DIR, exist_ok=True)
+
         # Reset counters if new day
         reset_if_new_day()
 
@@ -784,6 +790,7 @@ def scan_async():
                 filename = secure_filename(apk_file.filename or f"upload-{uuid.uuid4()}.apk")
                 tmp_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4()}_{filename}")
                 apk_file.save(tmp_path)
+                print(f"[DEBUG] APK saved to tmp_path: {tmp_path}")
                 job_id = _start_job(
                     _scan_job_file,
                     user_email=user_email,
@@ -794,6 +801,7 @@ def scan_async():
                     basic_paid=basic_paid
                 )
             else:
+                print(f"[DEBUG] Starting URL scan: {url_param}")
                 job_id = _start_job(
                     _scan_job_url,
                     user_email=user_email,
@@ -804,11 +812,11 @@ def scan_async():
                     basic_paid=basic_paid
                 )
         except Exception as e:
-            print(f"Scan job start failed: {e}")
+            print(f"[ERROR] Scan job start failed: {e}")
             return jsonify({"error": "Failed to start scan"}), 500
 
         # -----------------------------
-        # Increment counters
+        # Increment counters safely
         # -----------------------------
         try:
             if premium:
@@ -818,7 +826,7 @@ def scan_async():
             else:
                 increment_free_scans()
         except Exception as e:
-            print(f"Failed to increment scan counters: {e}")
+            print(f"[ERROR] Failed to increment scan counters: {e}")
 
         return jsonify({
             "job_id": job_id,
@@ -827,29 +835,36 @@ def scan_async():
         })
 
     except Exception as e:
-        print(f"Scan async error: {e}")
+        print(f"[ERROR] scan_async exception: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
-
 
 
 @app.route("/scan-result/<job_id>")
 def scan_result_poll(job_id):
-    job = jobs_get(job_id)
-    if not job:
-        return jsonify({"error": "job not found"}), 404
+    try:
+        job = jobs_get(job_id)
+        if not job:
+            return jsonify({"error": "job not found"}), 404
 
-    if job["status"] == "done":
-        result = job.get("result") or {}
-        return jsonify({
-            "status": "done",
-            "success": result.get("success", False),
-            "email": result.get("email")
-        })
+        if job["status"] == "done":
+            result = job.get("result") or {}
+            return jsonify({
+                "status": "done",
+                "success": result.get("success", False),
+                "email": result.get("email"),
+                "raw_result": result  # Added raw result for debugging
+            })
 
-    if job["status"] == "error":
-        return jsonify({"status": "error", "error": job.get("error", "unknown error")})
+        if job["status"] == "error":
+            return jsonify({
+                "status": "error",
+                "error": job.get("error", "unknown error")
+            })
 
-    return jsonify({"status": "pending"})
+        return jsonify({"status": "pending"})
+    except Exception as e:
+        print(f"[ERROR] scan_result_poll exception: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 @app.route("/subscribe", methods=["POST"])
 def subscribe():
@@ -901,6 +916,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
