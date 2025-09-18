@@ -438,7 +438,18 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
     try:
+        # -----------------------------
+        # Run APK file scan
+        # -----------------------------
         scan_result = scan_apk_file(tmp_path, premium=premium, payment_ref=payment_ref)
+
+        # DEBUG: log scan result for troubleshooting
+        print(f"[DEBUG] File scan result for {file_name_or_url}: {scan_result}")
+
+        # SAFEGUARD: ensure scan_result is always a dict
+        if not scan_result or not isinstance(scan_result, dict):
+            scan_result = {"verdict": "Unknown", "virustotal": {}}
+
         return _finalize_scan(
             scan_result,
             user_email,
@@ -451,32 +462,47 @@ def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premiu
         try:
             if tmp_path and os.path.exists(tmp_path):
                 os.remove(tmp_path)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[WARN] Failed to delete tmp file {tmp_path}: {e}")
 
 
 def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
-    if is_direct_apk_url(url_param):
-        local = download_apk_to_tmp(url_param)
-        try:
-            scan_result = scan_apk_file(local, premium=premium, payment_ref=payment_ref)
-        finally:
+    try:
+        if is_direct_apk_url(url_param):
+            local = download_apk_to_tmp(url_param)
             try:
-                if os.path.exists(local):
-                    os.remove(local)
-            except Exception:
-                pass
-    else:
-        scan_result = scan_url(url_param, premium=premium, payment_ref=payment_ref)
+                scan_result = scan_apk_file(local, premium=premium, payment_ref=payment_ref)
 
-    return _finalize_scan(
-        scan_result,
-        user_email,
-        file_name_or_url=file_name_or_url or url_param,
-        premium=premium,
-        payment_ref=payment_ref,
-        basic_paid=basic_paid
-    )
+                # DEBUG: log scan result
+                print(f"[DEBUG] URL file scan result for {file_name_or_url or url_param}: {scan_result}")
+
+            finally:
+                try:
+                    if os.path.exists(local):
+                        os.remove(local)
+                except Exception as e:
+                    print(f"[WARN] Failed to delete tmp file {local}: {e}")
+        else:
+            scan_result = scan_url(url_param, premium=premium, payment_ref=payment_ref)
+            print(f"[DEBUG] URL scan result for {file_name_or_url or url_param}: {scan_result}")
+
+        # SAFEGUARD: ensure scan_result is always a dict
+        if not scan_result or not isinstance(scan_result, dict):
+            scan_result = {"verdict": "Unknown", "virustotal": {}}
+
+        return _finalize_scan(
+            scan_result,
+            user_email,
+            file_name_or_url=file_name_or_url or url_param,
+            premium=premium,
+            payment_ref=payment_ref,
+            basic_paid=basic_paid
+        )
+
+    except Exception as e:
+        print(f"[ERROR] _scan_job_url failed for {url_param}: {e}")
+        return {"verdict": "Unknown", "virustotal": {}}
+
 
 
 # -------------------------------------------------------------------------------
@@ -875,6 +901,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
