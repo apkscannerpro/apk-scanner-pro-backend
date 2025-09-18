@@ -193,42 +193,38 @@ def generate_pdf_report(summary: str, report_text: str, file_name: str = "APK Fi
     return buffer
 
 
-# === Send report via email (Plain Text + PDF) ===
 def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = "APK File", premium: bool = False, payment_ref: str = None) -> bool:
     """
     Send scan results to the user.
-    - Free users → basic summary (no PDF)
-    - Basic-paid → same as free, but includes payment_ref in body
-    - Premium → full report + PDF (only if premium=True AND payment_ref provided)
+    Fully bulletproof for Brevo SMTP, logs everything.
     """
-
-    # Determine recipient email
     if not to_email:
         to_email = scan_result.get("user_email")
     if not to_email:
         print("❌ No recipient email provided. Aborting send_report_via_email.")
         return False
 
-    # Enforce premium requires payment_ref
     if premium and not payment_ref:
         print(f"⚠️ Premium requested but no payment_ref for {to_email}. Downgrading to free/basic-paid.")
         premium = False
 
     # Generate content
-    summary = generate_summary(scan_result, premium=premium)
-    report_text = generate_report(scan_result, premium=premium)
-    pdf_buffer = generate_pdf_report(summary, report_text, file_name, scan_result, premium=premium) if premium else None
+    try:
+        summary = generate_summary(scan_result, premium=premium)
+        report_text = generate_report(scan_result, premium=premium)
+        pdf_buffer = generate_pdf_report(summary, report_text, file_name, scan_result, premium=premium) if premium else None
+    except Exception as e:
+        print(f"❌ Failed to generate email content for {to_email}: {e}")
+        return False
 
-    # -------------------
-    # SMTP credentials from Render (Brevo)
-    # -------------------
+    # SMTP credentials
     smtp_server = os.getenv("SMTP_SERVER", "smtp-relay.brevo.com")
     smtp_port = int(os.getenv("SMTP_PORT", "587"))
     smtp_user = os.getenv("SMTP_USERNAME")
     smtp_pass = os.getenv("SMTP_PASSWORD")
     smtp_from = os.getenv("SMTP_FROM", "support@apkscannerpro.com")
 
-    if not (smtp_user and smtp_pass):
+    if not smtp_user or not smtp_pass:
         print("❌ Missing SMTP credentials — check Render environment variables.")
         return False
 
@@ -238,17 +234,17 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
         try:
             with open(scan_result["file_path"], "rb") as f:
                 sha256 = hashlib.sha256(f.read()).hexdigest()
-        except:
+        except Exception as e:
+            print(f"⚠️ Could not compute SHA256: {e}")
             sha256 = ""
 
-    # Build email
     msg = MIMEMultipart()
     msg["From"] = f"{COMPANY_NAME} <{smtp_from}>"
     msg["To"] = to_email
-
     subject_tier = "Premium" if premium else "Basic-Paid" if payment_ref else "Free"
     msg["Subject"] = f"{COMPANY_NAME} {subject_tier} Report – {file_name} ({verdict})"
 
+    # Build body
     body_lines = [
         "Hello,", "",
         f"Here is your {subject_tier} scan report for: {file_name}", "",
@@ -256,7 +252,6 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
         f"SHA256: {sha256}" if sha256 else "", "",
         "=== Summary ===", summary, ""
     ]
-
     if payment_ref and not premium:
         body_lines.append(f"Payment Reference (Basic-Paid): {payment_ref}\n")
     elif premium and payment_ref:
@@ -272,36 +267,35 @@ def send_report_via_email(*, to_email=None, scan_result: dict, file_name: str = 
 
     # Attach PDF if premium
     if premium and pdf_buffer:
-        part = MIMEApplication(pdf_buffer.getvalue(), Name=f"{file_name}_Report.pdf")
-        part["Content-Disposition"] = f'attachment; filename="{file_name}_Report.pdf"'
-        msg.attach(part)
+        try:
+            part = MIMEApplication(pdf_buffer.getvalue(), Name=f"{file_name}_Report.pdf")
+            part["Content-Disposition"] = f'attachment; filename="{file_name}_Report.pdf"'
+            msg.attach(part)
+        except Exception as e:
+            print(f"⚠️ Failed to attach PDF: {e}")
 
-    # Attach subscriber JSON + CSV (optional)
+    # Attach subscribers files (optional)
     try:
         subs_dir = os.getenv("SUBSCRIBERS_PATH", "apk_scanner_pro/Subscribers")
-        subs_json = os.path.join(subs_dir, "subscribers.json")
-        subs_csv = os.path.join(subs_dir, "subscribers.csv")
-        for fpath in (subs_json, subs_csv):
+        for fname in ("subscribers.json", "subscribers.csv"):
+            fpath = os.path.join(subs_dir, fname)
             if os.path.exists(fpath):
                 with open(fpath, "rb") as f:
-                    part = MIMEApplication(f.read(), Name=os.path.basename(fpath))
-                    part["Content-Disposition"] = f'attachment; filename="{os.path.basename(fpath)}"'
+                    part = MIMEApplication(f.read(), Name=fname)
+                    part["Content-Disposition"] = f'attachment; filename="{fname}"'
                     msg.attach(part)
     except Exception as e:
         print(f"⚠️ Could not attach subscriber files: {e}")
 
-    # -------------------
-    # Send email via Brevo SMTP
-    # -------------------
+    # Send via SMTP (Brevo)
     try:
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()
             server.login(smtp_user, smtp_pass)
             server.sendmail(smtp_from, to_email, msg.as_string())
-
         print(f"✅ Report sent to {to_email} ({subject_tier})")
 
-        # Save lead in Subscribers folder + push to GitHub
+        # Save lead
         from .lead_manager import _save_lead
         _save_lead(name="", email=to_email, source="report")
 
@@ -455,6 +449,7 @@ def scan():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 
