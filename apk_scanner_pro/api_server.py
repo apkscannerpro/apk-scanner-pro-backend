@@ -410,7 +410,7 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
     # --- Determine scan type ---
     if not premium and not basic_paid:
         used = get_used_scans()
-        FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "200"))
+        FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "50"))
         if used.get("free", 0) >= FREE_LIMIT:
             basic_paid = True
             payment_ref = "basic_paid"
@@ -642,7 +642,7 @@ def scan_stats():
     used_basic_paid = int(used.get("basic_paid", 0))
 
     # Daily limits from environment (fallback to defaults)
-    FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", 200))
+    FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", 50))
     PREMIUM_LIMIT = int(os.getenv("MAX_PREMIUM_SCANS_PER_DAY", 50))
 
     # Remaining scans (never below zero)
@@ -866,6 +866,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
