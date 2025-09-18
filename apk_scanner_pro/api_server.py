@@ -887,19 +887,17 @@ def scan_result_poll(job_id):
                 "status": "done",
                 "success": result.get("success", False),
                 "email": result.get("email"),
-                "raw_result": result  # Added raw result for debugging
+                "raw_result": result
             })
 
         if job["status"] == "error":
-            return jsonify({
-                "status": "error",
-                "error": job.get("error", "unknown error")
-            })
+            return jsonify({"status": "error", "error": job.get("error", "unknown error")})
 
         return jsonify({"status": "pending"})
     except Exception as e:
         print(f"[ERROR] scan_result_poll exception: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
+
 
 @app.route("/subscribe", methods=["POST"])
 def subscribe():
@@ -951,6 +949,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
