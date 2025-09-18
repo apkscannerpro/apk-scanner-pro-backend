@@ -109,6 +109,29 @@ def _sha256_file(file_path):
     return sha256.hexdigest()
 
 
+def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
+    try:
+        print(f"[DEBUG] Starting file scan for {file_name_or_url}, premium={premium}, basic_paid={basic_paid}")
+        scan_result = scan_apk_file(tmp_path, premium=premium, payment_ref=payment_ref)
+        print(f"[DEBUG] Scan result received: {scan_result}")
+        return _finalize_scan(
+            scan_result,
+            user_email,
+            file_name_or_url=file_name_or_url,
+            premium=premium,
+            payment_ref=payment_ref,
+            basic_paid=basic_paid
+        )
+    finally:
+        # Ensure temporary file is removed
+        try:
+            if tmp_path and os.path.exists(tmp_path):
+                os.remove(tmp_path)
+                print(f"[DEBUG] Temporary file removed: {tmp_path}")
+        except Exception as e:
+            print(f"[ERROR] Failed to remove temp file: {e}")
+
+
 def scan_apk_file(file_path, premium=False, payment_ref=None):
     """Scan an uploaded APK file with VirusTotal + AI layer."""
     try:
@@ -118,14 +141,17 @@ def scan_apk_file(file_path, premium=False, payment_ref=None):
         # --- Upload to VirusTotal ---
         with open(file_path, "rb") as f:
             files = {"file": (os.path.basename(file_path), f)}
+            print(f"[DEBUG] Uploading APK to VT: {file_path}")
             resp = requests.post(VT_SCAN_URL, headers=VT_HEADERS, files=files)
 
         if resp.status_code == 409:
             # Duplicate file — fetch existing report by actual SHA256
             file_hash = _sha256_file(file_path)
+            print(f"[DEBUG] Duplicate file detected, fetching existing report: {file_hash}")
             return _fetch_existing_file_report(file_hash)
 
         if resp.status_code not in (200, 202):
+            print(f"[ERROR] VT file submission failed: {resp.status_code} {resp.text}")
             return {
                 "status": "error",
                 "message": f"VT file submission failed: {resp.status_code}",
@@ -148,6 +174,7 @@ def scan_apk_file(file_path, premium=False, payment_ref=None):
         return _normalize_results(vt_engines, vt_stats, ai_summary)
 
     except Exception as e:
+        print(f"[ERROR] Exception in scan_apk_file: {e}")
         return {"status": "error", "message": f"Exception in scan_apk_file: {str(e)}"}
 
 
@@ -162,8 +189,10 @@ def scan_url(target_url, premium=False, payment_ref=None):
             return {"status": "error", "message": "Only valid Play Store URLs are allowed."}
 
         # --- Submit URL to VirusTotal ---
+        print(f"[DEBUG] Submitting URL to VT: {target_url}")
         url_resp = requests.post(VT_URL_SCAN, headers=VT_HEADERS, data={"url": target_url})
         if url_resp.status_code not in (200, 202):
+            print(f"[ERROR] VT URL submission failed: {url_resp.status_code} {url_resp.text}")
             return {"status": "error", "message": f"VT URL submission failed: {url_resp.status_code}", "details": url_resp.text}
 
         vt_data = url_resp.json()
@@ -181,6 +210,7 @@ def scan_url(target_url, premium=False, payment_ref=None):
         return _normalize_results(vt_engines, vt_stats, ai_summary)
 
     except Exception as e:
+        print(f"[ERROR] Exception in scan_url: {e}")
         return {"status": "error", "message": f"Exception in scan_url: {str(e)}"}
 
 
