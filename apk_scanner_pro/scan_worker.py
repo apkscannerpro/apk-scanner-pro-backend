@@ -139,10 +139,35 @@ def _sha256_file(file_path):
 
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
+    """
+    Handles scanning an uploaded APK file.
+    - Safe for VirusTotal API failures
+    - Always returns a dict compatible with _finalize_scan
+    - Auto-sends email report
+    - Cleans up temp files
+    """
+    scan_result = {"verdict": "Unknown", "virustotal": {}}
+
     try:
         print(f"[DEBUG] Starting file scan for {file_name_or_url}, premium={premium}, basic_paid={basic_paid}")
         scan_result = scan_apk_file(tmp_path, premium=premium, payment_ref=payment_ref)
         print(f"[DEBUG] Scan result received: {scan_result}")
+
+    except Exception as e:
+        print(f"[ERROR] Exception during scan_apk_file for {file_name_or_url}: {e}")
+        scan_result = {"verdict": "Unknown", "virustotal": {}, "note": f"Scan exception: {str(e)}"}
+
+    finally:
+        # Ensure temp file is removed
+        try:
+            if tmp_path and os.path.exists(tmp_path):
+                os.remove(tmp_path)
+                print(f"[DEBUG] Temporary file removed: {tmp_path}")
+        except Exception as e:
+            print(f"[ERROR] Failed to remove temp file: {e}")
+
+    # Finalize scan and send email safely
+    try:
         return _finalize_scan(
             scan_result,
             user_email,
@@ -151,14 +176,11 @@ def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premiu
             payment_ref=payment_ref,
             basic_paid=basic_paid
         )
-    finally:
-        # Ensure temporary file is removed
-        try:
-            if tmp_path and os.path.exists(tmp_path):
-                os.remove(tmp_path)
-                print(f"[DEBUG] Temporary file removed: {tmp_path}")
-        except Exception as e:
-            print(f"[ERROR] Failed to remove temp file: {e}")
+    except Exception as e:
+        print(f"[ERROR] Exception in _finalize_scan for {file_name_or_url}: {e}")
+        # Fallback dict to ensure safe return
+        return {"success": False, "email": user_email, "premium": premium, "basic_paid": basic_paid, "note": f"_finalize_scan failed: {str(e)}"}
+
 
 
 def scan_apk_file(file_path, premium=False, payment_ref=None):
@@ -241,3 +263,4 @@ def scan_url(target_url, premium=False, payment_ref=None):
     except Exception as e:
         print(f"[ERROR] Exception in scan_url: {e}")
         return _normalize_results({}, {}, note=f"Exception: {str(e)}")
+
