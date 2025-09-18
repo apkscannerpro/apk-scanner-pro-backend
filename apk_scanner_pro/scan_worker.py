@@ -73,18 +73,36 @@ def _normalize_results(vt_engines, vt_stats, ai_summary=None, note=None):
 
 
 def _poll_analysis(analysis_id):
-    """Poll VirusTotal until analysis is complete or timeout."""
+    """Poll VirusTotal until analysis is complete or timeout (~90s)."""
     analysis_url = f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
-    for _ in range(18):  # ~90s max
-        resp = requests.get(analysis_url, headers=VT_HEADERS)
+    print(f"[DEBUG] Polling VT analysis: {analysis_id}")
+
+    for attempt in range(1, 19):  # 18 attempts, 5s interval (~90s)
+        try:
+            resp = requests.get(analysis_url, headers=VT_HEADERS)
+        except Exception as e:
+            print(f"[ERROR] VT request exception on attempt {attempt}: {e}")
+            time.sleep(5)
+            continue
+
         if resp.status_code != 200:
-            return {"status": "error", "message": f"Analysis request failed: {resp.status_code}"}
+            print(f"[ERROR] VT request failed on attempt {attempt}: {resp.status_code}, {resp.text}")
+            time.sleep(5)
+            continue
+
         data = resp.json()
         status = data.get("data", {}).get("attributes", {}).get("status")
+        print(f"[DEBUG] Attempt {attempt}: VT analysis status = {status}")
+
         if status == "completed":
+            print(f"[DEBUG] VT analysis completed: {analysis_id}")
             return data
+
         time.sleep(5)
+
+    print(f"[ERROR] VT analysis timed out after 18 attempts: {analysis_id}")
     return {"status": "error", "message": "Timed out waiting for VirusTotal results"}
+
 
 
 def _fetch_existing_file_report(file_hash):
@@ -212,5 +230,6 @@ def scan_url(target_url, premium=False, payment_ref=None):
     except Exception as e:
         print(f"[ERROR] Exception in scan_url: {e}")
         return {"status": "error", "message": f"Exception in scan_url: {str(e)}"}
+
 
 
