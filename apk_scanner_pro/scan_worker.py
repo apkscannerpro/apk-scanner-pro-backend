@@ -74,16 +74,18 @@ def _normalize_results(vt_engines, vt_stats, ai_summary=None, note=None):
 
 def _poll_analysis(analysis_id):
     """
-    Poll VirusTotal until analysis is complete or timeout.
-    Retries up to 60 times with 5s interval (~5 minutes) for large APKs.
+    Poll VirusTotal until analysis is complete or timeout (~5 minutes).
+    Retries 60 times with 5s interval for large APKs.
     Always returns a dict safe for _finalize_scan.
     """
+    import time, requests
+
     analysis_url = f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
     print(f"[DEBUG] Polling VT analysis: {analysis_id}")
 
-    for attempt in range(1, 61):
+    for attempt in range(1, 61):  # 60 attempts, 5s interval (~5min)
         try:
-            resp = requests.get(analysis_url, headers=VT_HEADERS, timeout=15)
+            resp = requests.get(analysis_url, headers=VT_HEADERS)
         except Exception as e:
             print(f"[ERROR] VT request exception on attempt {attempt}: {e}")
             time.sleep(5)
@@ -94,15 +96,8 @@ def _poll_analysis(analysis_id):
             time.sleep(5)
             continue
 
-        try:
-            data = resp.json()
-        except Exception as e:
-            print(f"[ERROR] JSON decode failed on attempt {attempt}: {e}")
-            time.sleep(5)
-            continue
-
-        # Validate structure
-        if not data.get("data") or not isinstance(data["data"], dict):
+        data = resp.json()
+        if not data or "data" not in data:
             print(f"[WARN] VT response missing 'data' on attempt {attempt}: {data}")
             time.sleep(5)
             continue
@@ -111,15 +106,16 @@ def _poll_analysis(analysis_id):
         print(f"[DEBUG] Attempt {attempt}: VT analysis status = {status}")
 
         if status == "completed":
+            print(f"[DEBUG] VT analysis completed: {analysis_id}")
             return data
-        elif status == "queued":
+
+        if status == "queued":
             print(f"[DEBUG] VT analysis still queued, waiting... attempt {attempt}")
 
         time.sleep(5)
 
     print(f"[ERROR] VT analysis timed out after 60 attempts (~5min): {analysis_id}")
-    # Return safe fallback dict
-    return {"status": "error", "verdict": "Unknown", "virustotal": {}, "message": "Timed out waiting for VirusTotal results"}
+    return {"status": "error", "message": "Timed out waiting for VirusTotal results"}
 
 
 def _fetch_existing_file_report(file_hash):
@@ -263,5 +259,6 @@ def scan_url(target_url, premium=False, payment_ref=None):
     except Exception as e:
         print(f"[ERROR] Exception in scan_url: {e}")
         return _normalize_results({}, {}, note=f"Exception: {str(e)}")
+
 
 
