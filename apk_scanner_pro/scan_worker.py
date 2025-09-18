@@ -73,11 +73,15 @@ def _normalize_results(vt_engines, vt_stats, ai_summary=None, note=None):
 
 
 def _poll_analysis(analysis_id):
-    """Poll VirusTotal until analysis is complete or timeout (~90s)."""
+    """
+    Poll VirusTotal until analysis is complete or timeout.
+    Retries up to 60 times with 5s interval (~5 minutes) for larger APKs.
+    Always returns a dict safe for _finalize_scan.
+    """
     analysis_url = f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
     print(f"[DEBUG] Polling VT analysis: {analysis_id}")
 
-    for attempt in range(1, 19):  # 18 attempts, 5s interval (~90s)
+    for attempt in range(1, 61):  # 60 attempts, 5s interval (~5min)
         try:
             resp = requests.get(analysis_url, headers=VT_HEADERS)
         except Exception as e:
@@ -91,6 +95,11 @@ def _poll_analysis(analysis_id):
             continue
 
         data = resp.json()
+        if not data or "data" not in data:
+            print(f"[WARN] VT response missing 'data' on attempt {attempt}: {data}")
+            time.sleep(5)
+            continue
+
         status = data.get("data", {}).get("attributes", {}).get("status")
         print(f"[DEBUG] Attempt {attempt}: VT analysis status = {status}")
 
@@ -98,11 +107,13 @@ def _poll_analysis(analysis_id):
             print(f"[DEBUG] VT analysis completed: {analysis_id}")
             return data
 
+        if status == "queued":
+            print(f"[DEBUG] VT analysis still queued, waiting... attempt {attempt}")
+
         time.sleep(5)
 
-    print(f"[ERROR] VT analysis timed out after 18 attempts: {analysis_id}")
+    print(f"[ERROR] VT analysis timed out after 60 attempts (~5min): {analysis_id}")
     return {"status": "error", "message": "Timed out waiting for VirusTotal results"}
-
 
 
 def _fetch_existing_file_report(file_hash):
@@ -151,44 +162,43 @@ def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premiu
 
 
 def scan_apk_file(file_path, premium=False, payment_ref=None):
-    """Scan an uploaded APK file with VirusTotal + AI layer."""
+    """Scan an uploaded APK file via VirusTotal API + optional AI summary."""
     try:
         if not VIRUSTOTAL_API_KEY:
             return {"status": "error", "message": "VirusTotal API key missing."}
 
-        # --- Upload to VirusTotal ---
+        # --- Upload file to VirusTotal ---
         with open(file_path, "rb") as f:
             files = {"file": (os.path.basename(file_path), f)}
             print(f"[DEBUG] Uploading APK to VT: {file_path}")
             resp = requests.post(VT_SCAN_URL, headers=VT_HEADERS, files=files)
 
         if resp.status_code == 409:
-            # Duplicate file — fetch existing report by actual SHA256
+            # Duplicate file — fetch existing report by SHA256
             file_hash = _sha256_file(file_path)
             print(f"[DEBUG] Duplicate file detected, fetching existing report: {file_hash}")
             return _fetch_existing_file_report(file_hash)
 
         if resp.status_code not in (200, 202):
             print(f"[ERROR] VT file submission failed: {resp.status_code} {resp.text}")
-            return {
-                "status": "error",
-                "message": f"VT file submission failed: {resp.status_code}",
-                "details": resp.text,
-            }
+            return {"status": "error", "message": f"VT file submission failed: {resp.status_code}", "details": resp.text}
 
         vt_data = resp.json()
         analysis_id = vt_data.get("data", {}).get("id")
         if not analysis_id:
+            print(f"[ERROR] No analysis ID returned from VT: {vt_data}")
             return {"status": "error", "message": "No VT file analysis ID", "raw": vt_data}
 
-        # --- Poll until ready ---
+        # --- Poll VT until analysis is complete ---
         vt_analysis = _poll_analysis(analysis_id)
         if "status" in vt_analysis and vt_analysis["status"] == "error":
-            return vt_analysis
+            return {"status": "error", "message": vt_analysis.get("message", "VT analysis failed")}
 
+        # --- Extract results ---
         vt_stats = vt_analysis.get("data", {}).get("attributes", {}).get("stats", {}) or {}
         vt_engines = vt_analysis.get("data", {}).get("attributes", {}).get("results", {}) or {}
         ai_summary = _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
+
         return _normalize_results(vt_engines, vt_stats, ai_summary)
 
     except Exception as e:
@@ -197,34 +207,35 @@ def scan_apk_file(file_path, premium=False, payment_ref=None):
 
 
 def scan_url(target_url, premium=False, payment_ref=None):
-    """Scan Play Store link or any URL via VirusTotal + AI."""
+    """Scan Play Store URL or direct APK URL via VirusTotal API + optional AI summary."""
     try:
         if not VIRUSTOTAL_API_KEY:
             return {"status": "error", "message": "VirusTotal API key missing."}
 
-        # Validate URL format
         if "play.google.com/store/apps/details?id=" not in target_url:
             return {"status": "error", "message": "Only valid Play Store URLs are allowed."}
 
-        # --- Submit URL to VirusTotal ---
         print(f"[DEBUG] Submitting URL to VT: {target_url}")
-        url_resp = requests.post(VT_URL_SCAN, headers=VT_HEADERS, data={"url": target_url})
-        if url_resp.status_code not in (200, 202):
-            print(f"[ERROR] VT URL submission failed: {url_resp.status_code} {url_resp.text}")
-            return {"status": "error", "message": f"VT URL submission failed: {url_resp.status_code}", "details": url_resp.text}
+        resp = requests.post(VT_URL_SCAN, headers=VT_HEADERS, data={"url": target_url})
 
-        vt_data = url_resp.json()
+        if resp.status_code not in (200, 202):
+            print(f"[ERROR] VT URL submission failed: {resp.status_code} {resp.text}")
+            return {"status": "error", "message": f"VT URL submission failed: {resp.status_code}", "details": resp.text}
+
+        vt_data = resp.json()
         analysis_id = vt_data.get("data", {}).get("id")
         if not analysis_id:
+            print(f"[ERROR] No analysis ID returned from VT URL submission: {vt_data}")
             return {"status": "error", "message": "No VT URL analysis ID", "raw": vt_data}
 
         vt_analysis = _poll_analysis(analysis_id)
         if "status" in vt_analysis and vt_analysis["status"] == "error":
-            return vt_analysis
+            return {"status": "error", "message": vt_analysis.get("message", "VT URL analysis failed")}
 
         vt_stats = vt_analysis.get("data", {}).get("attributes", {}).get("stats", {}) or {}
         vt_engines = vt_analysis.get("data", {}).get("attributes", {}).get("results", {}) or {}
         ai_summary = _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
+
         return _normalize_results(vt_engines, vt_stats, ai_summary)
 
     except Exception as e:
