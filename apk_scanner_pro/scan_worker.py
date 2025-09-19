@@ -51,32 +51,48 @@ Report:
 
 def _normalize_results(vt_engines, vt_stats, ai_summary=None, note=None):
     """Unify scan results into branded SaaS-ready format."""
-    result = {
-        "status": "success",
-        "powered_by": "APK Scanner Pro",
-        "verdict": "Safe",
-        "virustotal": vt_engines or {},
-        "bitdefender": {
-            "Affiliate Offer": f"Protect your device with Bitdefender 👉 {BITDEFENDER_AFFILIATE_LINK}"
-        },
-        "ai": ai_summary or {},
-    }
+    try:
+        # Default structure
+        result = {
+            "status": "success",
+            "powered_by": "APK Scanner Pro",
+            "verdict": "Safe",
+            "stats": vt_stats or {},  # ✅ show quick numbers: harmless/malicious/suspicious
+            "virustotal": vt_engines or {},  # ✅ all engine details
+            "affiliate": {
+                "Bitdefender": f"Protect your device with Bitdefender 👉 {BITDEFENDER_AFFILIATE_LINK}"
+            },
+            "ai": ai_summary or {},
+        }
 
-    if vt_stats.get("malicious", 0) > 0:
-        result["verdict"] = "Malicious"
-    elif vt_stats.get("suspicious", 0) > 0:
-        result["verdict"] = "Suspicious"
+        # Verdict logic
+        malicious_count = vt_stats.get("malicious", 0)
+        suspicious_count = vt_stats.get("suspicious", 0)
 
-    if note:
-        result["note"] = note
-    return result
+        if malicious_count > 0:
+            result["verdict"] = "Malicious"
+        elif suspicious_count > 0:
+            result["verdict"] = "Suspicious"
+
+        # Add note if provided
+        if note:
+            result["note"] = note
+
+        return result
+
+    except Exception as e:
+        print(f"[ERROR] Exception in _normalize_results: {e}")
+        return {
+            "status": "error",
+            "message": f"Normalization failed: {str(e)}"
+        }
 
 
 def _poll_analysis(analysis_id):
     """
     Poll VirusTotal until analysis is complete or timeout (~5 minutes).
-    Retries up to 60 times with 5s interval for larger APKs.
-    Always returns a dict safe for _finalize_scan.
+    Retries up to 60 times with 5s interval.
+    Returns a dict always safe for downstream functions.
     """
     import time, requests
 
@@ -96,26 +112,41 @@ def _poll_analysis(analysis_id):
             time.sleep(5)
             continue
 
-        data = resp.json()
+        try:
+            data = resp.json()
+        except Exception as e:
+            print(f"[ERROR] Failed to parse VT response JSON: {e}")
+            time.sleep(5)
+            continue
+
         if not data or "data" not in data:
             print(f"[WARN] VT response missing 'data' on attempt {attempt}: {data}")
             time.sleep(5)
             continue
 
-        status = data.get("data", {}).get("attributes", {}).get("status")
+        attrs = data.get("data", {}).get("attributes", {})
+        status = attrs.get("status")
         print(f"[DEBUG] Attempt {attempt}: VT analysis status = {status}")
 
+        # ✅ Completed
         if status == "completed":
             print(f"[DEBUG] VT analysis completed: {analysis_id}")
             return data
 
-        if status == "queued":
-            print(f"[DEBUG] VT analysis still queued, waiting... attempt {attempt}")
+        # ✅ Sometimes partial stats are available early
+        if "stats" in attrs and attempt % 10 == 0:
+            print(f"[INFO] Returning partial results (attempt {attempt})")
+            return data
 
-        time.sleep(5)
+        # ✅ Queued / still processing
+        if status in ("queued", "in-progress", None):
+            time.sleep(5)
+            continue
 
+    # Timed out
     print(f"[ERROR] VT analysis timed out after 60 attempts (~5min): {analysis_id}")
     return {"status": "error", "message": "Timed out waiting for VirusTotal results"}
+
 
 
 def _fetch_existing_file_report(file_hash):
@@ -216,13 +247,18 @@ def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premiu
 def scan_apk_file(file_path, premium=False, payment_ref=None):
     """
     Scan an uploaded APK file via VirusTotal API + optional AI summary.
-    Returns a dict always safe for _finalize_scan.
+    Always returns a normalized dict safe for _finalize_scan.
     """
     import os, json, requests
 
     try:
         if not VIRUSTOTAL_API_KEY:
-            return {"status": "error", "message": "VirusTotal API key missing."}
+            return {
+                "status": "error",
+                "verdict": "Unknown",
+                "message": "VirusTotal API key missing.",
+                "virustotal": {}
+            }
 
         # --- Upload file to VirusTotal ---
         with open(file_path, "rb") as f:
@@ -238,18 +274,35 @@ def scan_apk_file(file_path, premium=False, payment_ref=None):
 
         if resp.status_code not in (200, 202):
             print(f"[ERROR] VT file submission failed: {resp.status_code} {resp.text}")
-            return {"status": "error", "message": f"VT file submission failed: {resp.status_code}", "details": resp.text}
+            return {
+                "status": "error",
+                "verdict": "Unknown",
+                "message": f"VT file submission failed: {resp.status_code}",
+                "virustotal": {},
+                "details": resp.text
+            }
 
         vt_data = resp.json()
         analysis_id = vt_data.get("data", {}).get("id")
         if not analysis_id:
             print(f"[ERROR] No analysis ID returned from VT: {vt_data}")
-            return {"status": "error", "message": "No VT file analysis ID", "raw": vt_data}
+            return {
+                "status": "error",
+                "verdict": "Unknown",
+                "message": "No VT file analysis ID",
+                "virustotal": {},
+                "raw": vt_data
+            }
 
         # --- Poll VT until analysis completes ---
         vt_analysis = _poll_analysis(analysis_id)
-        if "status" in vt_analysis and vt_analysis["status"] == "error":
-            return {"status": "error", "message": vt_analysis.get("message", "VT analysis failed")}
+        if vt_analysis.get("status") == "error":
+            return {
+                "status": "error",
+                "verdict": "Unknown",
+                "message": vt_analysis.get("message", "VT analysis failed"),
+                "virustotal": {}
+            }
 
         # --- Extract results ---
         vt_stats = vt_analysis.get("data", {}).get("attributes", {}).get("stats", {}) or {}
@@ -260,42 +313,73 @@ def scan_apk_file(file_path, premium=False, payment_ref=None):
 
     except Exception as e:
         print(f"[ERROR] Exception in scan_apk_file: {e}")
-        return {"status": "error", "message": f"Exception in scan_apk_file: {str(e)}"}
-
+        return {
+            "status": "error",
+            "verdict": "Unknown",
+            "message": f"Exception in scan_apk_file: {str(e)}",
+            "virustotal": {}
+        }
 
 
 def scan_url(target_url, premium=False, payment_ref=None):
     """
     Scan Play Store URL via VirusTotal API + optional AI summary.
-    Always returns a dict safe for _finalize_scan.
+    Always returns a normalized dict safe for _finalize_scan.
     """
     import os, json, requests
 
     try:
         if not VIRUSTOTAL_API_KEY:
-            return {"status": "error", "message": "VirusTotal API key missing."}
+            return {
+                "status": "error",
+                "verdict": "Unknown",
+                "message": "VirusTotal API key missing.",
+                "virustotal": {}
+            }
 
         # Only allow Play Store URLs
         if "play.google.com/store/apps/details?id=" not in target_url:
-            return {"status": "error", "message": "Only valid Play Store URLs are allowed."}
+            return {
+                "status": "error",
+                "verdict": "Unknown",
+                "message": "Only valid Play Store URLs are allowed.",
+                "virustotal": {}
+            }
 
         print(f"[DEBUG] Submitting URL to VT: {target_url}")
         resp = requests.post(VT_URL_SCAN, headers=VT_HEADERS, data={"url": target_url})
 
         if resp.status_code not in (200, 202):
             print(f"[ERROR] VT URL submission failed: {resp.status_code} {resp.text}")
-            return {"status": "error", "message": f"VT URL submission failed: {resp.status_code}", "details": resp.text}
+            return {
+                "status": "error",
+                "verdict": "Unknown",
+                "message": f"VT URL submission failed: {resp.status_code}",
+                "virustotal": {},
+                "details": resp.text
+            }
 
         vt_data = resp.json()
         analysis_id = vt_data.get("data", {}).get("id")
         if not analysis_id:
             print(f"[ERROR] No analysis ID returned from VT URL submission: {vt_data}")
-            return {"status": "error", "message": "No VT URL analysis ID", "raw": vt_data}
+            return {
+                "status": "error",
+                "verdict": "Unknown",
+                "message": "No VT URL analysis ID",
+                "virustotal": {},
+                "raw": vt_data
+            }
 
         # --- Poll VT until analysis completes ---
         vt_analysis = _poll_analysis(analysis_id)
-        if "status" in vt_analysis and vt_analysis["status"] == "error":
-            return {"status": "error", "message": vt_analysis.get("message", "VT URL analysis failed")}
+        if vt_analysis.get("status") == "error":
+            return {
+                "status": "error",
+                "verdict": "Unknown",
+                "message": vt_analysis.get("message", "VT URL analysis failed"),
+                "virustotal": {}
+            }
 
         # --- Extract results ---
         vt_stats = vt_analysis.get("data", {}).get("attributes", {}).get("stats", {}) or {}
@@ -306,9 +390,9 @@ def scan_url(target_url, premium=False, payment_ref=None):
 
     except Exception as e:
         print(f"[ERROR] Exception in scan_url: {e}")
-        return {"status": "error", "message": f"Exception in scan_url: {str(e)}"}
-
-
-
-
-
+        return {
+            "status": "error",
+            "verdict": "Unknown",
+            "message": f"Exception in scan_url: {str(e)}",
+            "virustotal": {}
+        }
