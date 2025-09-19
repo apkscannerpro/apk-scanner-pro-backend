@@ -91,8 +91,11 @@ def _normalize_results(vt_engines, vt_stats, ai_summary=None, note=None):
 def _poll_analysis(analysis_id):
     """
     Poll VirusTotal until analysis is complete or timeout (~5 minutes).
-    Retries up to 60 times with 5s interval.
-    Returns a dict always safe for downstream functions.
+    Always returns a normalized dict with keys:
+      - success (bool)
+      - verdict (str)
+      - message (str)
+      - virustotal (dict)
     """
     import time, requests
 
@@ -130,13 +133,25 @@ def _poll_analysis(analysis_id):
 
         # ✅ Completed
         if status == "completed":
-            print(f"[DEBUG] VT analysis completed: {analysis_id}")
-            return data
+            stats = attrs.get("stats", {})
+            verdict = "Malicious" if stats.get("malicious", 0) > 0 else "Clean"
+            return {
+                "success": True,
+                "verdict": verdict,
+                "message": f"Scan completed with {stats.get('malicious',0)} malicious detections",
+                "virustotal": data
+            }
 
-        # ✅ Sometimes partial stats are available early
+        # ✅ Partial results (every 10 attempts)
         if "stats" in attrs and attempt % 10 == 0:
-            print(f"[INFO] Returning partial results (attempt {attempt})")
-            return data
+            stats = attrs.get("stats", {})
+            verdict = "Suspicious" if stats.get("malicious", 0) > 0 else "Pending"
+            return {
+                "success": True,
+                "verdict": verdict,
+                "message": "Partial results available",
+                "virustotal": data
+            }
 
         # ✅ Queued / still processing
         if status in ("queued", "in-progress", None):
@@ -144,8 +159,13 @@ def _poll_analysis(analysis_id):
             continue
 
     # Timed out
-    print(f"[DEBUG] Last VT response before timeout: {data if 'data' in locals() else 'no data'}")
-    return {"status": "error", "message": "Timed out waiting for VirusTotal results"}
+    print(f"[ERROR] VT analysis timed out after 60 attempts (~5min): {analysis_id}")
+    return {
+        "success": False,
+        "verdict": "Unknown",
+        "message": "Timed out waiting for VirusTotal results",
+        "virustotal": {}
+    }
 
 
 
@@ -396,4 +416,5 @@ def scan_url(target_url, premium=False, payment_ref=None):
             "message": f"Exception in scan_url: {str(e)}",
             "virustotal": {}
         }
+
 
