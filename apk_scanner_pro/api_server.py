@@ -465,25 +465,27 @@ def _start_job(target_fn, *args, **kwargs):
 
 
 
-def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
+def _finalize_scan(scan_result, user_email, file_name_or_url=None,
+                   premium=False, payment_ref=None, basic_paid=False):
     """
-    Handles email sending and scan result processing.
-    Always returns a normalized dict.
+    Normalize and finalize scan results.
+    Sends email + saves lead.
+    Always returns a strict normalized dict.
     """
     print(f"[DEBUG] Finalizing scan for {user_email}, file={file_name_or_url}")
-    print(f"[DEBUG] Raw scan_result (pre-normalize): {scan_result}")
+    print(f"[DEBUG] Raw scan_result: {scan_result}")
 
-    # --- Normalize scan_result early ---
+    # --- Normalize early ---
     if not scan_result or not isinstance(scan_result, dict):
         print("[WARN] scan_result missing or not dict, normalizing...")
-        scan_result = {"status": "error", "message": "Invalid scan result"}
+        scan_result = {}
 
-    verdict = scan_result.get("verdict") or "Unknown"
-    message = scan_result.get("message") or scan_result.get("error") or ""
+    verdict = scan_result.get("verdict", "Unknown")
+    message = scan_result.get("message") or scan_result.get("error", "")
     vt_data = scan_result.get("virustotal") or scan_result.get("data") or {}
 
-    # If it failed, make sure it's clear
-    if "error" in scan_result or scan_result.get("status") == "error":
+    # If VirusTotal timed out or failed
+    if scan_result.get("status") == "error" or "error" in scan_result:
         print(f"[WARN] Normalizing error scan_result: {message}")
         verdict = "Unknown"
 
@@ -491,7 +493,7 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
     email_sent = False
     try:
         email_sent = send_report_via_email(
-            email_to=user_email,
+            email_to=user_email,   # ✅ consistent arg name
             scan_result={
                 "verdict": verdict,
                 "virustotal": vt_data,
@@ -512,15 +514,16 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
     except Exception as e:
         print(f"[WARN] Failed to save lead: {e}")
 
+    # --- Always return normalized dict (strict keys) ---
     return {
-        "success": email_sent,
+        "success": bool(email_sent),
         "email": user_email,
         "premium": premium,
         "basic_paid": basic_paid,
         "verdict": verdict,
-        "message": message
+        "message": message,
+        "virustotal": vt_data
     }
-
 
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
@@ -939,24 +942,49 @@ def scan_result_poll(job_id):
     try:
         job = jobs_get(job_id)
         if not job:
-            return jsonify({"error": "job not found"}), 404
+            return jsonify({"status": "error", "success": False, "message": "Job not found"}), 404
 
         if job["status"] == "done":
             result = job.get("result") or {}
+
+            # --- Normalize ---
+            normalized = {
+                "success": bool(result.get("success", False)),
+                "email": result.get("email"),
+                "verdict": result.get("verdict", "Unknown"),
+                "message": result.get("message", ""),
+                "virustotal": result.get("virustotal", {}),
+                "premium": result.get("premium", False),
+                "basic_paid": result.get("basic_paid", False)
+            }
+
             return jsonify({
                 "status": "done",
-                "success": result.get("success", False),
-                "email": result.get("email"),
-                "raw_result": result
+                **normalized
             })
 
         if job["status"] == "error":
-            return jsonify({"status": "error", "error": job.get("error", "unknown error")})
+            return jsonify({
+                "status": "error",
+                "success": False,
+                "verdict": "Unknown",
+                "message": job.get("error", "Unknown error"),
+                "virustotal": {}
+            })
 
-        return jsonify({"status": "pending"})
+        # Still processing
+        return jsonify({"status": "pending", "success": False})
+
     except Exception as e:
         print(f"[ERROR] scan_result_poll exception: {e}")
-        return jsonify({"error": "Internal Server Error"}), 500
+        return jsonify({
+            "status": "error",
+            "success": False,
+            "verdict": "Unknown",
+            "message": "Internal Server Error",
+            "virustotal": {}
+        }), 500
+
 
 
 @app.route("/subscribe", methods=["POST"])
@@ -1005,6 +1033,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
