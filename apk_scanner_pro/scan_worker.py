@@ -144,7 +144,7 @@ def _poll_analysis(analysis_id):
             continue
 
     # Timed out
-    print(f"[ERROR] VT analysis timed out after 60 attempts (~5min): {analysis_id}")
+    print(f"[DEBUG] Last VT response before timeout: {data if 'data' in locals() else 'no data'}")
     return {"status": "error", "message": "Timed out waiting for VirusTotal results"}
 
 
@@ -396,3 +396,4 @@ def scan_url(target_url, premium=False, payment_ref=None):
             "message": f"Exception in scan_url: {str(e)}",
             "virustotal": {}
         }
+
