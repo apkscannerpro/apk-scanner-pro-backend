@@ -102,6 +102,8 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Ensure DB exists and quota row initialized at startup
+init_db()
 
 def reset_if_new_day():
     conn = db_conn()
@@ -944,10 +946,6 @@ def handle_large_file(e):
 def handle_bad_request(e):
     return jsonify({"error": "Bad request"}), 400
 
-@app.errorhandler(404)
-def handle_404(e):
-    return jsonify({"error": "Not found"}), 404
-
 @app.errorhandler(500)
 def handle_500(e):
     return jsonify({"error": "Internal Server Error"}), 500
@@ -962,6 +960,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
