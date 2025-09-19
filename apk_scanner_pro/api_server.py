@@ -38,7 +38,7 @@ UPLOAD_DIR = "/tmp/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # -------------------------------------------------------------------------------
-# Database (quota + jobs + premium logs)
+# Database (quota + jobs + premium logs + basic logs)
 # -------------------------------------------------------------------------------
 DB_PATH = os.path.join(os.path.dirname(__file__), "quota.db")
 
@@ -48,24 +48,27 @@ def db_conn():
 def init_db():
     conn = db_conn()
     c = conn.cursor()
-    # Quota
+
+    # Quota table (with free, basic, premium counters)
     c.execute("""
         CREATE TABLE IF NOT EXISTS quota (
             id INTEGER PRIMARY KEY,
             date TEXT,
-            used_free_scans INTEGER,
-            used_basic_scans INTEGER,
-            used_premium_scans INTEGER
+            used_free_scans INTEGER DEFAULT 0,
+            used_basic_scans INTEGER DEFAULT 0,
+            used_premium_scans INTEGER DEFAULT 0
         )
     """)
-    # Initialize row if empty
+
+    # Initialize quota row if empty
     if c.execute("SELECT COUNT(*) FROM quota").fetchone()[0] == 0:
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        c.execute(
-            "INSERT INTO quota (id, date, used_free_scans, used_basic_scans, used_premium_scans) VALUES (1, ?, 0, 0, 0)",
-            (today,)
-        )
-    # Jobs
+        c.execute("""
+            INSERT INTO quota (id, date, used_free_scans, used_basic_scans, used_premium_scans)
+            VALUES (1, ?, 0, 0, 0)
+        """, (today,))
+
+    # Jobs table (for async scan tracking)
     c.execute("""
         CREATE TABLE IF NOT EXISTS jobs (
             id TEXT PRIMARY KEY,
@@ -75,7 +78,8 @@ def init_db():
             created_at TEXT NOT NULL
         )
     """)
-    # Premium logs
+
+    # Premium logs (records of paid premium scans)
     c.execute("""
         CREATE TABLE IF NOT EXISTS premium_logs (
             id TEXT PRIMARY KEY,
@@ -84,7 +88,8 @@ def init_db():
             created_at TEXT NOT NULL
         )
     """)
-    # Basic-paid logs
+
+    # Basic-paid logs (records of paid basic scans)
     c.execute("""
         CREATE TABLE IF NOT EXISTS basic_logs (
             id TEXT PRIMARY KEY,
@@ -93,8 +98,10 @@ def init_db():
             created_at TEXT NOT NULL
         )
     """)
+
     conn.commit()
     conn.close()
+
 
 def reset_if_new_day():
     conn = db_conn()
@@ -399,51 +406,46 @@ def _start_job(target_fn, *args, **kwargs):
     def _run():
         try:
             result = target_fn(*args, **kwargs)
+            # Always wrap in dict so fetch never breaks
+            if not isinstance(result, dict):
+                result = {"verdict": "Unknown", "message": "Empty job result", "success": False}
             jobs_set_done(job_id, result)
         except Exception as e:
-            jobs_set_error(job_id, str(e))
+            print(f"[ERROR] Job {job_id} crashed: {e}")
+            jobs_set_error(job_id, f"Exception: {str(e)}")
 
     EXECUTOR.submit(_run)
     return job_id
 
+
 def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
     """
     Handles email sending and scan result processing.
-    Auto-detects quota & payment status.
-    Ensures email is always attempted and errors do not block execution.
+    Always returns a normalized dict.
     """
-    # --- Ensure scan_result is always a dict ---
+    # --- Normalize scan_result early ---
     if not scan_result or not isinstance(scan_result, dict):
-        scan_result = {"verdict": "Unknown", "virustotal": {}, "message": "Scan result missing"}
+        scan_result = {}
 
-    # If scan_result contains error, log but continue
-    if scan_result.get("status") == "error" or "error" in scan_result:
-        print(f"[WARN] Scan returned error: {scan_result.get('message', scan_result.get('error'))}")
-        scan_result.setdefault("verdict", "Unknown")
-        scan_result.setdefault("virustotal", {})
+    verdict = scan_result.get("verdict") or "Unknown"
+    message = scan_result.get("message") or scan_result.get("error") or ""
+    vt_data = scan_result.get("virustotal") or {}
 
-    # --- Determine free vs basic_paid ---
-    if not premium and not basic_paid:
-        try:
-            used = get_used_scans()
-            FREE_LIMIT = int(os.getenv("MAX_FREE_SCANS_PER_DAY", "50"))
-            if used.get("free", 0) >= FREE_LIMIT:
-                basic_paid = True
-                payment_ref = "basic_paid"
-        except Exception as e:
-            print(f"[WARN] Could not check free scan usage: {e}")
+    # If it failed, make sure it's clear
+    if "error" in scan_result or scan_result.get("status") == "error":
+        print(f"[WARN] Normalizing error scan_result: {message}")
+        verdict = "Unknown"
 
-    # Premium scan requires payment_ref
-    if premium and not payment_ref:
-        print(f"[WARN] Premium requested but no payment_ref, downgrading to free/basic-paid.")
-        premium = False
-
-    # --- Send email safely ---
+    # --- Send email ---
     email_sent = False
     try:
         email_sent = send_report_via_email(
             to_email=user_email,
-            scan_result=scan_result,
+            scan_result={
+                "verdict": verdict,
+                "virustotal": vt_data,
+                "message": message
+            },
             file_name=file_name_or_url or "APK File",
             premium=premium,
             payment_ref=payment_ref
@@ -452,38 +454,30 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
     except Exception as e:
         print(f"[ERROR] Failed to send email to {user_email}: {e}")
 
-    # --- Save lead safely ---
+    # --- Save lead ---
     try:
         _save_lead(name="", email=user_email, source="scan_report")
-        print(f"[DEBUG] Lead saved for {user_email}")
     except Exception as e:
         print(f"[WARN] Failed to save lead: {e}")
 
-    # --- Return safe result ---
     return {
         "success": email_sent,
         "email": user_email,
         "premium": premium,
         "basic_paid": basic_paid,
-        "verdict": scan_result.get("verdict", "Unknown"),
-        "message": scan_result.get("message", "")
+        "verdict": verdict,
+        "message": message
     }
-
 
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
     try:
-        scan_result = {}
         try:
             scan_result = scan_apk_file(tmp_path, premium=premium, payment_ref=payment_ref)
             print(f"[DEBUG] File scan raw result for {file_name_or_url}: {scan_result}")
         except Exception as e:
             print(f"[ERROR] scan_apk_file failed for {file_name_or_url}: {e}")
-            scan_result = {"error": f"scan_apk_file exception: {str(e)}"}
-
-        # SAFEGUARD: ensure scan_result is dict
-        if not scan_result or not isinstance(scan_result, dict):
-            scan_result = {"verdict": "Unknown", "virustotal": {}}
+            scan_result = {"error": str(e)}
 
         return _finalize_scan(
             scan_result,
@@ -494,44 +488,33 @@ def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premiu
             basic_paid=basic_paid
         )
     finally:
-        try:
-            if tmp_path and os.path.exists(tmp_path):
-                os.remove(tmp_path)
-                print(f"[DEBUG] Temp file deleted: {tmp_path}")
-            elif tmp_path:
-                print(f"[WARN] Temp file not found for deletion: {tmp_path}")
-        except Exception as e:
-            print(f"[WARN] Failed to delete tmp file {tmp_path}: {e}")
+        if tmp_path:
+            try:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+                    print(f"[DEBUG] Temp file deleted: {tmp_path}")
+            except Exception as e:
+                print(f"[WARN] Failed to delete tmp file {tmp_path}: {e}")
 
 
 def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
-    scan_result = {}
     try:
+        scan_result = {}
         if is_direct_apk_url(url_param):
             local = download_apk_to_tmp(url_param)
             try:
                 scan_result = scan_apk_file(local, premium=premium, payment_ref=payment_ref)
                 print(f"[DEBUG] URL file scan result for {file_name_or_url or url_param}: {scan_result}")
             finally:
-                try:
-                    if os.path.exists(local):
-                        os.remove(local)
-                        print(f"[DEBUG] Temp file deleted: {local}")
-                    else:
-                        print(f"[WARN] Temp file not found for deletion: {local}")
-                except Exception as e:
-                    print(f"[WARN] Failed to delete tmp file {local}: {e}")
+                if os.path.exists(local):
+                    os.remove(local)
         else:
             try:
                 scan_result = scan_url(url_param, premium=premium, payment_ref=payment_ref)
                 print(f"[DEBUG] URL scan result for {file_name_or_url or url_param}: {scan_result}")
             except Exception as e:
                 print(f"[ERROR] scan_url failed for {url_param}: {e}")
-                scan_result = {"error": f"scan_url exception: {str(e)}"}
-
-        # SAFEGUARD: ensure scan_result is dict
-        if not scan_result or not isinstance(scan_result, dict):
-            scan_result = {"verdict": "Unknown", "virustotal": {}}
+                scan_result = {"error": str(e)}
 
         return _finalize_scan(
             scan_result,
@@ -543,8 +526,14 @@ def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premiu
         )
     except Exception as e:
         print(f"[ERROR] _scan_job_url failed totally for {url_param}: {e}")
-        return {"verdict": "Unknown", "virustotal": {}}
-
+        return _finalize_scan(
+            {"error": str(e)},
+            user_email,
+            file_name_or_url=file_name_or_url or url_param,
+            premium=premium,
+            payment_ref=payment_ref,
+            basic_paid=basic_paid
+        )
 
 
 # -------------------------------------------------------------------------------
@@ -966,6 +955,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
