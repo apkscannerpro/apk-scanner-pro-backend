@@ -822,21 +822,7 @@ def scan_async():
                 # Auto-switch to paid
                 basic_paid = True
                 payment_ref = "basic_paid"
-
-         # increment quota
-today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-conn = sqlite3.connect("scans.db")
-cur = conn.cursor()
-
-cur.execute("""
-    INSERT INTO scan_usage(day, used)
-    VALUES(?, 1)
-    ON CONFLICT(day) DO UPDATE SET used = used + 1
-""", (today,))
-
-conn.commit()
-conn.close()
-
+                
 
         # -----------------------------
         # Start scan job
@@ -925,37 +911,6 @@ def scan_result_poll(job_id):
         print(f"[ERROR] scan_result_poll exception: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
 
-@app.route("/quota", methods=["GET"])
-def quota():
-    """Return today's scan usage and limits."""
-    try:
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-        # open sqlite connection
-        conn = sqlite3.connect("scans.db")
-        cur = conn.cursor()
-
-        # create table if not exists
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS scan_usage (
-                day TEXT PRIMARY KEY,
-                used INTEGER DEFAULT 0
-            )
-        """)
-
-        # fetch today
-        cur.execute("SELECT used FROM scan_usage WHERE day=?", (today,))
-        row = cur.fetchone()
-        used = row[0] if row else 0
-
-        conn.commit()
-        conn.close()
-
-        return jsonify({"status": "success", "used": used, "limit": 300})
-
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
 
 @app.route("/subscribe", methods=["POST"])
 def subscribe():
@@ -1007,6 +962,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
