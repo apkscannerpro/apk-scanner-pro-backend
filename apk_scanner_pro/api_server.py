@@ -424,11 +424,20 @@ def _start_job(target_fn, *args, **kwargs):
         try:
             result = target_fn(*args, **kwargs)
 
-            # Ensure dict result
+            # ✅ Ensure dict result
             if not isinstance(result, dict):
-                result = {"verdict": "Unknown", "message": "Empty job result", "success": False}
+                print(f"[ERROR] Non-dict result from scan: {result}")
+                result = {"status": "error", "message": "Scan function failed"}
 
-            # Make sure result is JSON-serializable. If not, stringify non-serializable values.
+            # ✅ Strict: require VT data
+            if (
+                not result.get("virustotal")
+                and result.get("status") != "error"
+            ):
+                print(f"[ERROR] Missing virustotal data in result: {result}")
+                result = {"status": "error", "message": "No VirusTotal data returned"}
+
+            # ✅ Ensure JSON-serializable
             try:
                 json.dumps(result)
             except TypeError:
@@ -462,12 +471,12 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
     Always returns a normalized dict.
     """
     print(f"[DEBUG] Finalizing scan for {user_email}, file={file_name_or_url}")
-    print(f"[DEBUG] Raw scan_result: {scan_result}")
+    print(f"[DEBUG] Raw scan_result (pre-normalize): {scan_result}")
 
     # --- Normalize scan_result early ---
     if not scan_result or not isinstance(scan_result, dict):
         print("[WARN] scan_result missing or not dict, normalizing...")
-        scan_result = {}
+        scan_result = {"status": "error", "message": "Invalid scan result"}
 
     verdict = scan_result.get("verdict") or "Unknown"
     message = scan_result.get("message") or scan_result.get("error") or ""
@@ -482,7 +491,7 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
     email_sent = False
     try:
         email_sent = send_report_via_email(
-            email_to=user_email,   # ✅ force consistent keyword
+            email_to=user_email,
             scan_result={
                 "verdict": verdict,
                 "virustotal": vt_data,
@@ -511,6 +520,7 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None, premium=False
         "verdict": verdict,
         "message": message
     }
+
 
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
@@ -995,6 +1005,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
