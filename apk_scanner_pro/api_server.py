@@ -20,6 +20,7 @@ from apk_scanner_pro.lead_manager import _save_lead
 
 # Workers
 from .scan_worker import scan_apk_file, scan_url
+from .scan_worker import _poll_analysis
 from .report_generator import generate_report, generate_summary
 
 # -------------------------------------------------------------------------------
@@ -530,7 +531,6 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None,
         "virustotal": vt_data
     }
 
-from apk_scanner_pro.backend.scan_worker import _poll_analysis
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None,
                    premium=False, payment_ref=None, basic_paid=False):
@@ -1109,6 +1109,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
