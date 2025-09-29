@@ -530,15 +530,32 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None,
         "virustotal": vt_data
     }
 
+from apk_scanner_pro.backend.scan_worker import _poll_analysis
 
-def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
+def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None,
+                   premium=False, payment_ref=None, basic_paid=False):
     try:
         try:
             scan_result = scan_apk_file(tmp_path, premium=premium, payment_ref=payment_ref)
             print(f"[DEBUG] File scan raw result for {file_name_or_url}: {scan_result}")
+
+            # 🔑 NEW: If VirusTotal gave an analysis_id, poll for final results
+            analysis_id = None
+            if isinstance(scan_result, dict):
+                analysis_id = scan_result.get("data", {}).get("id") or scan_result.get("id")
+
+            if analysis_id:
+                print(f"[DEBUG] Detected analysis_id for file scan: {analysis_id}")
+                scan_result = _poll_analysis(analysis_id)
+
         except Exception as e:
             print(f"[ERROR] scan_apk_file failed for {file_name_or_url}: {e}")
-            scan_result = {"error": str(e)}
+            scan_result = {
+                "success": False,
+                "verdict": "Unknown",
+                "message": str(e),
+                "virustotal": {}
+            }
 
         return _finalize_scan(
             scan_result,
@@ -558,7 +575,8 @@ def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None, premiu
                 print(f"[WARN] Failed to delete tmp file {tmp_path}: {e}")
 
 
-def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premium=False, payment_ref=None, basic_paid=False):
+def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None,
+                  premium=False, payment_ref=None, basic_paid=False):
     try:
         scan_result = {}
         if is_direct_apk_url(url_param):
@@ -566,6 +584,16 @@ def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premiu
             try:
                 scan_result = scan_apk_file(local, premium=premium, payment_ref=payment_ref)
                 print(f"[DEBUG] URL file scan result for {file_name_or_url or url_param}: {scan_result}")
+
+                # 🔑 NEW: Poll if analysis_id is present
+                analysis_id = None
+                if isinstance(scan_result, dict):
+                    analysis_id = scan_result.get("data", {}).get("id") or scan_result.get("id")
+
+                if analysis_id:
+                    print(f"[DEBUG] Detected analysis_id for URL file scan: {analysis_id}")
+                    scan_result = _poll_analysis(analysis_id)
+
             finally:
                 if os.path.exists(local):
                     os.remove(local)
@@ -573,9 +601,24 @@ def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premiu
             try:
                 scan_result = scan_url(url_param, premium=premium, payment_ref=payment_ref)
                 print(f"[DEBUG] URL scan result for {file_name_or_url or url_param}: {scan_result}")
+
+                # 🔑 NEW: Poll if analysis_id is present
+                analysis_id = None
+                if isinstance(scan_result, dict):
+                    analysis_id = scan_result.get("data", {}).get("id") or scan_result.get("id")
+
+                if analysis_id:
+                    print(f"[DEBUG] Detected analysis_id for generic URL scan: {analysis_id}")
+                    scan_result = _poll_analysis(analysis_id)
+
             except Exception as e:
                 print(f"[ERROR] scan_url failed for {url_param}: {e}")
-                scan_result = {"error": str(e)}
+                scan_result = {
+                    "success": False,
+                    "verdict": "Unknown",
+                    "message": str(e),
+                    "virustotal": {}
+                }
 
         return _finalize_scan(
             scan_result,
@@ -588,13 +631,19 @@ def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None, premiu
     except Exception as e:
         print(f"[ERROR] _scan_job_url failed totally for {url_param}: {e}")
         return _finalize_scan(
-            {"error": str(e)},
+            {
+                "success": False,
+                "verdict": "Unknown",
+                "message": str(e),
+                "virustotal": {}
+            },
             user_email,
             file_name_or_url=file_name_or_url or url_param,
             premium=premium,
             payment_ref=payment_ref,
             basic_paid=basic_paid
         )
+
 
 
 # -------------------------------------------------------------------------------
@@ -1060,6 +1109,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
