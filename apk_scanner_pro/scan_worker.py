@@ -102,71 +102,76 @@ def _poll_analysis(analysis_id):
     analysis_url = f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
     print(f"[DEBUG] Polling VT analysis: {analysis_id}")
 
-    for attempt in range(1, 61):  # 60 attempts, 5s interval (~5min)
+    for attempt in range(1, 61):  # 60 attempts → ~5 min max
         try:
-            resp = requests.get(analysis_url, headers=VT_HEADERS)
+            resp = requests.get(analysis_url, headers=VT_HEADERS, timeout=15)
         except Exception as e:
-            print(f"[ERROR] VT request exception on attempt {attempt}: {e}")
+            print(f"[ERROR] VT request exception (attempt {attempt}): {e}")
             time.sleep(5)
             continue
 
         if resp.status_code != 200:
-            print(f"[ERROR] VT request failed on attempt {attempt}: {resp.status_code}, {resp.text}")
+            print(f"[ERROR] VT request failed (attempt {attempt}): {resp.status_code}, {resp.text}")
             time.sleep(5)
             continue
 
         try:
             data = resp.json()
         except Exception as e:
-            print(f"[ERROR] Failed to parse VT response JSON: {e}")
-            time.sleep(5)
-            continue
-
-        if not data or "data" not in data:
-            print(f"[WARN] VT response missing 'data' on attempt {attempt}: {data}")
+            print(f"[ERROR] Failed to parse VT JSON (attempt {attempt}): {e}")
             time.sleep(5)
             continue
 
         attrs = data.get("data", {}).get("attributes", {})
-        status = attrs.get("status")
-        print(f"[DEBUG] Attempt {attempt}: VT analysis status = {status}")
+        status = attrs.get("status", "unknown")
+        print(f"[DEBUG] Attempt {attempt}: VT status = {status}")
 
         # ✅ Completed
         if status == "completed":
             stats = attrs.get("stats", {})
-            verdict = "Malicious" if stats.get("malicious", 0) > 0 else "Clean"
+            malicious = stats.get("malicious", 0)
+            verdict = "Malicious" if malicious > 0 else "Clean"
             return {
                 "success": True,
                 "verdict": verdict,
-                "message": f"Scan completed with {stats.get('malicious',0)} malicious detections",
+                "message": f"Scan completed: {malicious} malicious detections",
                 "virustotal": data
             }
 
-        # ✅ Partial results (every 10 attempts)
+        # ✅ Partial results every 10 attempts
         if "stats" in attrs and attempt % 10 == 0:
             stats = attrs.get("stats", {})
-            verdict = "Suspicious" if stats.get("malicious", 0) > 0 else "Pending"
+            malicious = stats.get("malicious", 0)
+            verdict = "Suspicious" if malicious > 0 else "Pending"
             return {
                 "success": True,
                 "verdict": verdict,
-                "message": "Partial results available",
+                "message": "Partial results available (still scanning)",
                 "virustotal": data
             }
 
-        # ✅ Queued / still processing
-        if status in ("queued", "in-progress", None):
+        # Still queued or in-progress → retry
+        if status in ("queued", "in-progress", "running", None):
             time.sleep(5)
             continue
 
-    # Timed out
+        # Unknown status but still got data
+        if attrs:
+            return {
+                "success": True,
+                "verdict": "Unknown",
+                "message": f"Unexpected status '{status}' – raw results attached",
+                "virustotal": data
+            }
+
+    # ❌ Timed out completely
     print(f"[ERROR] VT analysis timed out after 60 attempts (~5min): {analysis_id}")
     return {
         "success": False,
-        "verdict": "Unknown",
+        "verdict": "Timeout",
         "message": "Timed out waiting for VirusTotal results",
         "virustotal": {}
     }
-
 
 
 def _fetch_existing_file_report(file_hash):
@@ -416,5 +421,6 @@ def scan_url(target_url, premium=False, payment_ref=None):
             "message": f"Exception in scan_url: {str(e)}",
             "virustotal": {}
         }
+
 
 
