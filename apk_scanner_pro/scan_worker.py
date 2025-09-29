@@ -91,14 +91,13 @@ def _normalize_results(vt_engines, vt_stats, ai_summary=None, note=None):
 def _poll_analysis(analysis_id):
     """
     Poll VirusTotal until analysis is complete or timeout (~5 minutes).
-    Always returns a normalized dict with keys:
+    Always returns a normalized dict with:
       - success (bool)
       - verdict (str)
       - message (str)
+      - stats (dict)
       - virustotal (dict)
     """
-    import time, requests
-
     analysis_url = f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
     print(f"[DEBUG] Polling VT analysis: {analysis_id}")
 
@@ -124,54 +123,47 @@ def _poll_analysis(analysis_id):
 
         attrs = data.get("data", {}).get("attributes", {})
         status = attrs.get("status", "unknown")
-        print(f"[DEBUG] Attempt {attempt}: VT status = {status}")
+        stats = attrs.get("stats", {}) or {}
+        results = attrs.get("results", {}) or {}
 
-        # ✅ Completed
+        malicious = stats.get("malicious", 0)
+        suspicious = stats.get("suspicious", 0)
+
+        # --- Verdict logic ---
         if status == "completed":
-            stats = attrs.get("stats", {})
-            malicious = stats.get("malicious", 0)
-            verdict = "Malicious" if malicious > 0 else "Clean"
+            verdict = "Malicious" if malicious > 0 else ("Suspicious" if suspicious > 0 else "Clean")
             return {
                 "success": True,
                 "verdict": verdict,
-                "message": f"Scan completed: {malicious} malicious detections",
-                "virustotal": data
+                "message": f"Completed with {malicious} malicious, {suspicious} suspicious detections",
+                "stats": stats,
+                "virustotal": results,
             }
 
-        # ✅ Partial results every 10 attempts
-        if "stats" in attrs and attempt % 10 == 0:
-            stats = attrs.get("stats", {})
-            malicious = stats.get("malicious", 0)
-            verdict = "Suspicious" if malicious > 0 else "Pending"
-            return {
-                "success": True,
-                "verdict": verdict,
-                "message": "Partial results available (still scanning)",
-                "virustotal": data
-            }
-
-        # Still queued or in-progress → retry
         if status in ("queued", "in-progress", "running", None):
+            print(f"[DEBUG] Attempt {attempt}: still {status}")
             time.sleep(5)
             continue
 
-        # Unknown status but still got data
+        # Unknown but has attributes
         if attrs:
             return {
                 "success": True,
                 "verdict": "Unknown",
-                "message": f"Unexpected status '{status}' – raw results attached",
-                "virustotal": data
+                "message": f"Unexpected status '{status}'",
+                "stats": stats,
+                "virustotal": results,
             }
 
-    # ❌ Timed out completely
-    print(f"[ERROR] VT analysis timed out after 60 attempts (~5min): {analysis_id}")
+    # ❌ Timeout
     return {
         "success": False,
         "verdict": "Timeout",
-        "message": "Timed out waiting for VirusTotal results",
+        "message": "Timed out waiting for VT results",
+        "stats": {},
         "virustotal": {}
     }
+
 
 
 def _fetch_existing_file_report(file_hash):
@@ -330,8 +322,8 @@ def scan_apk_file(file_path, premium=False, payment_ref=None):
             }
 
         # --- Extract results ---
-        vt_stats = vt_analysis.get("data", {}).get("attributes", {}).get("stats", {}) or {}
-        vt_engines = vt_analysis.get("data", {}).get("attributes", {}).get("results", {}) or {}
+        vt_stats = vt_analysis.get("stats", {}) or {}
+        vt_engines = vt_analysis.get("virustotal", {}) or {}
         ai_summary = _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
 
         return _normalize_results(vt_engines, vt_stats, ai_summary)
@@ -407,8 +399,8 @@ def scan_url(target_url, premium=False, payment_ref=None):
             }
 
         # --- Extract results ---
-        vt_stats = vt_analysis.get("data", {}).get("attributes", {}).get("stats", {}) or {}
-        vt_engines = vt_analysis.get("data", {}).get("attributes", {}).get("results", {}) or {}
+        vt_stats = vt_analysis.get("stats", {}) or {}
+        vt_engines = vt_analysis.get("virustotal", {}) or {}
         ai_summary = _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
 
         return _normalize_results(vt_engines, vt_stats, ai_summary)
@@ -421,6 +413,7 @@ def scan_url(target_url, premium=False, payment_ref=None):
             "message": f"Exception in scan_url: {str(e)}",
             "virustotal": {}
         }
+
 
 
 
