@@ -475,25 +475,30 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None,
     print(f"[DEBUG] Finalizing scan for {user_email}, file={file_name_or_url}")
     print(f"[DEBUG] Raw scan_result: {scan_result}")
 
-    # --- Normalize early ---
+    # --- Strict normalization ---
     if not scan_result or not isinstance(scan_result, dict):
         print("[WARN] scan_result missing or not dict, normalizing...")
-        scan_result = {}
+        scan_result = {
+            "success": False,
+            "verdict": "Unknown",
+            "message": "No scan result received",
+            "virustotal": {}
+        }
 
     verdict = scan_result.get("verdict", "Unknown")
-    message = scan_result.get("message") or scan_result.get("error", "")
-    vt_data = scan_result.get("virustotal") or scan_result.get("data") or {}
+    message = scan_result.get("message", "No message")
+    vt_data = scan_result.get("virustotal", {})
 
-    # If VirusTotal timed out or failed
-    if scan_result.get("status") == "error" or "error" in scan_result:
-        print(f"[WARN] Normalizing error scan_result: {message}")
+    # If explicitly failed upstream
+    if not scan_result.get("success", False):
+        print(f"[WARN] Upstream scan_result not successful: {message}")
         verdict = "Unknown"
 
     # --- Send email ---
     email_sent = False
     try:
         email_sent = send_report_via_email(
-            email_to=user_email,   # ✅ consistent arg name
+            email_to=user_email,
             scan_result={
                 "verdict": verdict,
                 "virustotal": vt_data,
@@ -516,7 +521,7 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None,
 
     # --- Always return normalized dict (strict keys) ---
     return {
-        "success": bool(email_sent),
+        "success": bool(email_sent) and scan_result.get("success", False),
         "email": user_email,
         "premium": premium,
         "basic_paid": basic_paid,
@@ -942,12 +947,20 @@ def scan_result_poll(job_id):
     try:
         job = jobs_get(job_id)
         if not job:
-            return jsonify({"status": "error", "success": False, "message": "Job not found"}), 404
+            return jsonify({
+                "status": "error",
+                "success": False,
+                "email": None,
+                "verdict": "Unknown",
+                "message": "Job not found",
+                "virustotal": {},
+                "premium": False,
+                "basic_paid": False
+            }), 404
 
         if job["status"] == "done":
             result = job.get("result") or {}
 
-            # --- Normalize ---
             normalized = {
                 "success": bool(result.get("success", False)),
                 "email": result.get("email"),
@@ -967,24 +980,38 @@ def scan_result_poll(job_id):
             return jsonify({
                 "status": "error",
                 "success": False,
+                "email": None,
                 "verdict": "Unknown",
                 "message": job.get("error", "Unknown error"),
-                "virustotal": {}
+                "virustotal": {},
+                "premium": False,
+                "basic_paid": False
             })
 
-        # Still processing
-        return jsonify({"status": "pending", "success": False})
+        # --- Pending (strict normalized response) ---
+        return jsonify({
+            "status": "pending",
+            "success": False,
+            "email": None,
+            "verdict": "Pending",
+            "message": "Scan is still in progress",
+            "virustotal": {},
+            "premium": False,
+            "basic_paid": False
+        })
 
     except Exception as e:
         print(f"[ERROR] scan_result_poll exception: {e}")
         return jsonify({
             "status": "error",
             "success": False,
+            "email": None,
             "verdict": "Unknown",
             "message": "Internal Server Error",
-            "virustotal": {}
+            "virustotal": {},
+            "premium": False,
+            "basic_paid": False
         }), 500
-
 
 
 @app.route("/subscribe", methods=["POST"])
@@ -1033,6 +1060,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
