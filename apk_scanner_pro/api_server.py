@@ -834,6 +834,7 @@ def scan_stats():
         return jsonify({"error": "Unable to fetch scan stats"}), 500
 
 
+
 @app.route("/scan-async", methods=["POST"])
 def scan_async():
     """
@@ -841,19 +842,12 @@ def scan_async():
     Applies quota checks, starts scan job, and increments counters.
     """
     try:
-        # -----------------------------
-        # Ensure upload directory exists
-        # -----------------------------
         os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-        # -----------------------------
         # Reset counters if new day
-        # -----------------------------
         reset_if_new_day()
 
-        # -----------------------------
         # Fetch used counters
-        # -----------------------------
         used = get_used_scans() or {}
         used_free = used.get("free", 0)
         used_premium = used.get("premium", 0)
@@ -863,9 +857,7 @@ def scan_async():
         PREMIUM_LIMIT = int(os.getenv("MAX_PREMIUM_SCANS_PER_DAY", "50"))
         BASIC_PAID_LIMIT = int(os.getenv("MAX_BASIC_PAID_SCANS_PER_DAY", "500"))
 
-        # -----------------------------
         # Parse request
-        # -----------------------------
         json_body = request.get_json(silent=True) or {}
         form = request.form or {}
 
@@ -888,15 +880,11 @@ def scan_async():
         if not apk_file and not url_param:
             return jsonify({"error": "No APK file or apk_url provided"}), 400
 
-        # -----------------------------
         # Scan type flags
-        # -----------------------------
         premium = str(form.get("premium") or json_body.get("premium") or "").lower() == "true"
         basic_paid = str(form.get("basic_paid") or json_body.get("basic_paid") or "").lower() == "true"
 
-        # -----------------------------
         # Quota handling
-        # -----------------------------
         if premium:
             if not payment_ref:
                 return jsonify({
@@ -905,40 +893,27 @@ def scan_async():
                     "premium": True
                 }), 403
             if used_premium >= PREMIUM_LIMIT:
-                return jsonify({
-                    "error": "Daily premium scan limit reached.",
-                    "payment_required": True,
-                    "premium": True
-                }), 403
+                return jsonify({"error": "Daily premium scan limit reached."}), 403
 
         elif basic_paid:
             if not payment_ref:
                 payment_ref = "basic_paid"
             if used_basic_paid >= BASIC_PAID_LIMIT:
-                return jsonify({
-                    "error": "Daily basic paid scan limit reached.",
-                    "payment_required": True,
-                    "basic_paid": True
-                }), 403
+                return jsonify({"error": "Daily basic paid scan limit reached."}), 403
 
         else:
             if used_free >= FREE_LIMIT:
-                # Auto-switch to paid
                 basic_paid = True
                 payment_ref = "basic_paid"
-                
 
-        # -----------------------------
         # Start scan job
-        # -----------------------------
         try:
             if apk_file:
                 filename = secure_filename(apk_file.filename or f"upload-{uuid.uuid4()}.apk")
                 tmp_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4()}_{filename}")
                 apk_file.save(tmp_path)
-                print(f"[DEBUG] File scan started: {tmp_path}")
 
-                job_id = _start_job(
+                _start_job(
                     _scan_job_file,
                     user_email=user_email,
                     tmp_path=tmp_path,
@@ -949,9 +924,7 @@ def scan_async():
                 )
 
             else:
-                print(f"[DEBUG] URL scan started: {url_param}")
-
-                job_id = _start_job(
+                _start_job(
                     _scan_job_url,
                     user_email=user_email,
                     url_param=url_param,
@@ -965,9 +938,7 @@ def scan_async():
             print(f"[ERROR] Scan job start failed: {e}")
             return jsonify({"error": "Failed to start scan"}), 500
 
-        # -----------------------------
         # Increment counters
-        # -----------------------------
         try:
             if premium:
                 increment_premium_scans()
@@ -978,18 +949,18 @@ def scan_async():
         except Exception as e:
             print(f"[ERROR] Failed to increment scan counters: {e}")
 
-        # -----------------------------
-        # Return success
-        # -----------------------------
+        # ✅ Return only success message (frontend shows green alert)
         return jsonify({
-            "job_id": job_id,
-            "premium": premium,
-            "basic_paid": basic_paid
+            "success": True,
+            "email": user_email,
+            "message": f"Report sent to {user_email}"
         })
 
     except Exception as e:
         print(f"[ERROR] scan_async exception: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
+
+
 
 @app.route("/scan-result/<job_id>")
 def scan_result_poll(job_id):
@@ -1109,6 +1080,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
