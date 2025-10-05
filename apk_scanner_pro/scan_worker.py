@@ -50,31 +50,37 @@ Report:
 
 
 def _normalize_results(vt_engines, vt_stats, ai_summary=None, note=None):
-    """Unify scan results into branded SaaS-ready format."""
+    """Unify scan results into branded SaaS-ready format (stable shape)."""
     try:
-        # Default structure
+        # Compose canonical result
         result = {
-            "status": "success",
+            "status": "success",                       # legacy field
+            "success": True,                           # canonical boolean used across code
             "powered_by": "APK Scanner Pro",
             "verdict": "Safe",
-            "stats": vt_stats or {},  # ✅ show quick numbers: harmless/malicious/suspicious
-            "virustotal": vt_engines or {},  # ✅ all engine details
+            "stats": vt_stats or {}, # ✅ show quick numbers: harmless/malicious/suspicious
+            "virustotal": vt_engines or {}, # ✅ all engine details
             "affiliate": {
                 "Bitdefender": f"Protect your device with Bitdefender 👉 {BITDEFENDER_AFFILIATE_LINK}"
             },
             "ai": ai_summary or {},
+            "message": ""
         }
 
-        # Verdict logic
-        malicious_count = vt_stats.get("malicious", 0)
-        suspicious_count = vt_stats.get("suspicious", 0)
+        # Verdict logic (prefer counts from vt_stats)
+        malicious_count = int(vt_stats.get("malicious", 0) or 0)
+        suspicious_count = int(vt_stats.get("suspicious", 0) or 0)
 
         if malicious_count > 0:
             result["verdict"] = "Malicious"
+            result["message"] = f"{malicious_count} engines flagged as malicious."
         elif suspicious_count > 0:
             result["verdict"] = "Suspicious"
+            result["message"] = f"{suspicious_count} engines flagged as suspicious."
+        else:
+            result["verdict"] = "Clean"
+            result["message"] = "No malicious engines detected."
 
-        # Add note if provided
         if note:
             result["note"] = note
 
@@ -84,14 +90,19 @@ def _normalize_results(vt_engines, vt_stats, ai_summary=None, note=None):
         print(f"[ERROR] Exception in _normalize_results: {e}")
         return {
             "status": "error",
-            "message": f"Normalization failed: {str(e)}"
+            "success": False,
+            "verdict": "Unknown",
+            "message": f"Normalization failed: {str(e)}",
+            "stats": {},
+            "virustotal": {}
         }
+
 
 
 def _poll_analysis(analysis_id):
     """
     Poll VirusTotal until analysis is complete or timeout (~5 minutes).
-    Always returns a normalized dict with:
+    Always returns a normalized dict with keys:
       - success (bool)
       - verdict (str)
       - message (str)
@@ -121,15 +132,17 @@ def _poll_analysis(analysis_id):
             time.sleep(5)
             continue
 
-        attrs = data.get("data", {}).get("attributes", {})
+        attrs = data.get("data", {}).get("attributes", {}) or {}
         status = attrs.get("status", "unknown")
         stats = attrs.get("stats", {}) or {}
         results = attrs.get("results", {}) or {}
 
-        malicious = stats.get("malicious", 0)
-        suspicious = stats.get("suspicious", 0)
+        malicious = int(stats.get("malicious", 0) or 0)
+        suspicious = int(stats.get("suspicious", 0) or 0)
 
-        # --- Verdict logic ---
+        print(f"[DEBUG] Attempt {attempt}: VT status = {status} (malicious={malicious}, suspicious={suspicious})")
+
+        # Completed -> return canonical shape
         if status == "completed":
             verdict = "Malicious" if malicious > 0 else ("Suspicious" if suspicious > 0 else "Clean")
             return {
@@ -137,25 +150,26 @@ def _poll_analysis(analysis_id):
                 "verdict": verdict,
                 "message": f"Completed with {malicious} malicious, {suspicious} suspicious detections",
                 "stats": stats,
-                "virustotal": results,
+                "virustotal": results
             }
 
+        # Still processing — wait and retry
         if status in ("queued", "in-progress", "running", None):
-            print(f"[DEBUG] Attempt {attempt}: still {status}")
             time.sleep(5)
             continue
 
-        # Unknown but has attributes
+        # Unknown status but attributes exist -> return what we have
         if attrs:
             return {
                 "success": True,
                 "verdict": "Unknown",
-                "message": f"Unexpected status '{status}'",
+                "message": f"Unexpected status '{status}' — partial data returned",
                 "stats": stats,
-                "virustotal": results,
+                "virustotal": results
             }
 
-    # ❌ Timeout
+    # Timed out
+    print(f"[ERROR] VT analysis timed out after 60 attempts (~5min): {analysis_id}")
     return {
         "success": False,
         "verdict": "Timeout",
@@ -163,7 +177,6 @@ def _poll_analysis(analysis_id):
         "stats": {},
         "virustotal": {}
     }
-
 
 
 def _fetch_existing_file_report(file_hash):
@@ -272,16 +285,18 @@ def scan_apk_file(file_path, premium=False, payment_ref=None):
         if not VIRUSTOTAL_API_KEY:
             return {
                 "status": "error",
+                "success": False,
                 "verdict": "Unknown",
                 "message": "VirusTotal API key missing.",
-                "virustotal": {}
+                "virustotal": {},
+                "stats": {}
             }
 
         # --- Upload file to VirusTotal ---
         with open(file_path, "rb") as f:
             files = {"file": (os.path.basename(file_path), f)}
             print(f"[DEBUG] Uploading APK to VT: {file_path}")
-            resp = requests.post(VT_SCAN_URL, headers=VT_HEADERS, files=files)
+            resp = requests.post(VT_SCAN_URL, headers=VT_HEADERS, files=files, timeout=60)
 
         # Handle duplicate file
         if resp.status_code == 409:
@@ -293,9 +308,11 @@ def scan_apk_file(file_path, premium=False, payment_ref=None):
             print(f"[ERROR] VT file submission failed: {resp.status_code} {resp.text}")
             return {
                 "status": "error",
+                "success": False,
                 "verdict": "Unknown",
                 "message": f"VT file submission failed: {resp.status_code}",
                 "virustotal": {},
+                "stats": {},
                 "details": resp.text
             }
 
@@ -305,23 +322,28 @@ def scan_apk_file(file_path, premium=False, payment_ref=None):
             print(f"[ERROR] No analysis ID returned from VT: {vt_data}")
             return {
                 "status": "error",
+                "success": False,
                 "verdict": "Unknown",
                 "message": "No VT file analysis ID",
                 "virustotal": {},
+                "stats": {},
                 "raw": vt_data
             }
 
         # --- Poll VT until analysis completes ---
         vt_analysis = _poll_analysis(analysis_id)
-        if vt_analysis.get("status") == "error":
+        if not vt_analysis.get("success", False):
+            # poll failed or timed out
             return {
                 "status": "error",
+                "success": False,
                 "verdict": "Unknown",
                 "message": vt_analysis.get("message", "VT analysis failed"),
-                "virustotal": {}
+                "virustotal": vt_analysis.get("virustotal", {}),
+                "stats": vt_analysis.get("stats", {})
             }
 
-        # --- Extract results ---
+        # --- Extract results and normalize for caller ---
         vt_stats = vt_analysis.get("stats", {}) or {}
         vt_engines = vt_analysis.get("virustotal", {}) or {}
         ai_summary = _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
@@ -332,9 +354,11 @@ def scan_apk_file(file_path, premium=False, payment_ref=None):
         print(f"[ERROR] Exception in scan_apk_file: {e}")
         return {
             "status": "error",
+            "success": False,
             "verdict": "Unknown",
             "message": f"Exception in scan_apk_file: {str(e)}",
-            "virustotal": {}
+            "virustotal": {},
+            "stats": {}
         }
 
 
@@ -349,30 +373,36 @@ def scan_url(target_url, premium=False, payment_ref=None):
         if not VIRUSTOTAL_API_KEY:
             return {
                 "status": "error",
+                "success": False,
                 "verdict": "Unknown",
                 "message": "VirusTotal API key missing.",
-                "virustotal": {}
+                "virustotal": {},
+                "stats": {}
             }
 
         # Only allow Play Store URLs
         if "play.google.com/store/apps/details?id=" not in target_url:
             return {
                 "status": "error",
+                "success": False,
                 "verdict": "Unknown",
                 "message": "Only valid Play Store URLs are allowed.",
-                "virustotal": {}
+                "virustotal": {},
+                "stats": {}
             }
 
         print(f"[DEBUG] Submitting URL to VT: {target_url}")
-        resp = requests.post(VT_URL_SCAN, headers=VT_HEADERS, data={"url": target_url})
+        resp = requests.post(VT_URL_SCAN, headers=VT_HEADERS, data={"url": target_url}, timeout=30)
 
         if resp.status_code not in (200, 202):
             print(f"[ERROR] VT URL submission failed: {resp.status_code} {resp.text}")
             return {
                 "status": "error",
+                "success": False,
                 "verdict": "Unknown",
                 "message": f"VT URL submission failed: {resp.status_code}",
                 "virustotal": {},
+                "stats": {},
                 "details": resp.text
             }
 
@@ -382,23 +412,26 @@ def scan_url(target_url, premium=False, payment_ref=None):
             print(f"[ERROR] No analysis ID returned from VT URL submission: {vt_data}")
             return {
                 "status": "error",
+                "success": False,
                 "verdict": "Unknown",
                 "message": "No VT URL analysis ID",
                 "virustotal": {},
+                "stats": {},
                 "raw": vt_data
             }
 
         # --- Poll VT until analysis completes ---
         vt_analysis = _poll_analysis(analysis_id)
-        if vt_analysis.get("status") == "error":
+        if not vt_analysis.get("success", False):
             return {
                 "status": "error",
+                "success": False,
                 "verdict": "Unknown",
                 "message": vt_analysis.get("message", "VT URL analysis failed"),
-                "virustotal": {}
+                "virustotal": vt_analysis.get("virustotal", {}),
+                "stats": vt_analysis.get("stats", {})
             }
 
-        # --- Extract results ---
         vt_stats = vt_analysis.get("stats", {}) or {}
         vt_engines = vt_analysis.get("virustotal", {}) or {}
         ai_summary = _ai_assistant_summary(json.dumps({"vt": vt_stats})) if AI_ENABLED else {}
@@ -409,11 +442,12 @@ def scan_url(target_url, premium=False, payment_ref=None):
         print(f"[ERROR] Exception in scan_url: {e}")
         return {
             "status": "error",
+            "success": False,
             "verdict": "Unknown",
             "message": f"Exception in scan_url: {str(e)}",
-            "virustotal": {}
+            "virustotal": {},
+            "stats": {}
         }
-
 
 
 
