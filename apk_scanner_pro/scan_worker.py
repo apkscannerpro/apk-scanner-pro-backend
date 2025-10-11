@@ -12,6 +12,24 @@ VT_SCAN_URL = "https://www.virustotal.com/api/v3/files"
 VT_URL_SCAN = "https://www.virustotal.com/api/v3/urls"
 VT_HEADERS = {"x-apikey": VIRUSTOTAL_API_KEY}
 
+# --- Utility to poll VirusTotal results ---
+def poll_virustotal_analysis(analysis_url, retries=10, delay=10):
+    """Poll VirusTotal for analysis completion."""
+    for i in range(retries):
+        try:
+            resp = requests.get(analysis_url, headers=VT_HEADERS)
+            data = resp.json()
+            status = data.get("data", {}).get("attributes", {}).get("status", "")
+            if status == "completed":
+                return data
+            print(f"[DEBUG] Poll {i+1}/{retries}: status={status}")
+        except Exception as e:
+            print(f"[WARN] Polling VT failed: {e}")
+        time.sleep(delay)
+    print("[ERROR] VT polling timed out")
+    return {"error": "Timeout waiting for VirusTotal analysis"}
+
+
 # --- Bitdefender Affiliate (no API, just link) ---
 BITDEFENDER_AFFILIATE_LINK = (
     "https://www.bitdefender.com/"
@@ -448,6 +466,7 @@ def scan_url(target_url, premium=False, payment_ref=None):
             "virustotal": {},
             "stats": {}
         }
+
 
 
 
