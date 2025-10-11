@@ -473,12 +473,12 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None,
     Sends email + saves lead.
     Always returns a strict normalized dict.
     """
-    print(f"[DEBUG] Finalizing scan for {user_email}, file={file_name_or_url}")
+    print(f"[INFO] Finalizing scan for {user_email} | File/URL: {file_name_or_url}")
     print(f"[DEBUG] Raw scan_result: {scan_result}")
 
     # --- Strict normalization ---
     if not scan_result or not isinstance(scan_result, dict):
-        print("[WARN] scan_result missing or not dict, normalizing...")
+        print("[WARN] scan_result missing or invalid, normalizing...")
         scan_result = {
             "success": False,
             "verdict": "Unknown",
@@ -486,43 +486,42 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None,
             "virustotal": {}
         }
 
+    # Normalize critical fields
     verdict = scan_result.get("verdict", "Unknown")
-    message = scan_result.get("message", "No message")
+    message = scan_result.get("message", "No message provided")
     vt_data = scan_result.get("virustotal", {})
 
-    # If explicitly failed upstream
-    if not scan_result.get("success", False):
-        print(f"[WARN] Upstream scan_result not successful: {message}")
+    if not scan_result.get("success", True):
+        print(f"[WARN] Upstream scan_result flagged unsuccessful: {message}")
         verdict = "Unknown"
 
-    # --- Send email ---
+    # --- Send email with Brevo ---
     email_sent = False
     try:
+        from .report_generator import send_report_via_email
         email_sent = send_report_via_email(
-            email_to=user_email,
-            scan_result={
-                "verdict": verdict,
-                "virustotal": vt_data,
-                "message": message
-            },
-            file_name_or_url=file_name_or_url or "APK File",
+            to_email=user_email,
+            scan_result=scan_result,  # Full object
+            file_name=file_name_or_url or "APK File",
             premium=premium,
             payment_ref=payment_ref
         )
-        print(f"[DEBUG] Email sent status: {email_sent} to {user_email}")
+        print(f"[SUCCESS] Email sent: {email_sent} | Recipient: {user_email}")
     except Exception as e:
-        print(f"[ERROR] Failed to send email to {user_email}: {e}")
+        print(f"[ERROR] send_report_via_email() failed for {user_email}: {e}")
 
     # --- Save lead ---
     try:
+        from .lead_manager import _save_lead
         _save_lead(name="", email=user_email, source="scan_report")
-        print(f"[DEBUG] Lead saved for {user_email}")
+        print(f"[INFO] Lead saved successfully for {user_email}")
     except Exception as e:
-        print(f"[WARN] Failed to save lead: {e}")
+        print(f"[WARN] Lead saving failed: {e}")
 
-    # --- Always return normalized dict (strict keys) ---
-    return {
-        "success": bool(email_sent) and scan_result.get("success", False),
+    # --- Return strict normalized response ---
+    result = {
+        "success": True if scan_result.get("success", True) else False,
+        "email_sent": bool(email_sent),
         "email": user_email,
         "premium": premium,
         "basic_paid": basic_paid,
@@ -530,6 +529,9 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None,
         "message": message,
         "virustotal": vt_data
     }
+
+    print(f"[DEBUG] Final response payload: {result}")
+    return result
 
 
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None,
@@ -1108,6 +1110,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
