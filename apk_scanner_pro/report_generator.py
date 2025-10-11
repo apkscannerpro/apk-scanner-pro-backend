@@ -23,13 +23,12 @@ from apk_scanner_pro.lead_manager import _save_lead
 # Load OpenAI key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# === Bitdefender affiliate link ===
+# --- Branding + constants ---
+COMPANY_NAME = "APK Scanner Pro"
+COMPANY_URL = "https://www.apkscannerpro.com"
+COMPANY_SUPPORT_EMAIL = "support@apkscannerpro.com"
 BITDEFENDER_AFFILIATE_LINK = "https://www.bitdefender.com/"
 
-# === Branding constants ===
-COMPANY_NAME = "APK Scanner Pro"
-COMPANY_URL = "https://apkscannerpro.com"
-COMPANY_SUPPORT_EMAIL = "support@apkscannerpro.com"
 
 
 # === Generate full human-readable report with AI ===
@@ -449,6 +448,7 @@ def scan():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 
