@@ -495,6 +495,12 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None,
         print(f"[WARN] Upstream scan_result flagged unsuccessful: {message}")
         verdict = "Unknown"
 
+    # Fallback for empty or failed scan
+    if not vt_data or isinstance(vt_data, str):
+        vt_data = {"status": "error", "message": "VirusTotal data unavailable"}
+        scan_result["success"] = False
+        print("[WARN] VT data was empty, injecting fallback message.")
+
     # --- Send email with Brevo ---
     email_sent = False
     try:
@@ -1110,6 +1116,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
