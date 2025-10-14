@@ -426,9 +426,10 @@ def _start_job(target_fn, *args, **kwargs):
             result = target_fn(*args, **kwargs)
 
             # ✅ Ensure dict result
-            if not isinstance(result, dict):
-                print(f"[ERROR] Non-dict result from scan: {result}")
-                result = {"status": "error", "message": "Scan function failed"}
+            if not isinstance(result, dict) or not result:
+                print(f"[ERROR] Invalid or empty result from scan: {result}")
+                result = {"status": "error", "message": "Invalid scan output", "virustotal": {}}
+
 
             # ✅ Strict: require VT data
             if (
@@ -475,6 +476,9 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None,
     """
     print(f"[INFO] Finalizing scan for {user_email} | File/URL: {file_name_or_url}")
     print(f"[DEBUG] Raw scan_result: {scan_result}")
+    if not result.get("virustotal"):
+    result["virustotal"] = {"status": "no_data", "message": "Scan completed but no VirusTotal data"}
+
 
     # --- Strict normalization ---
     if not scan_result or not isinstance(scan_result, dict):
@@ -504,11 +508,11 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None,
     # --- Send email with Brevo ---
     email_sent = False
     try:
-        from .report_generator import send_report_via_email
+        # use the already imported function directly
         email_sent = send_report_via_email(
-            to_email=user_email,
-            scan_result=scan_result,  # Full object
-            file_name=file_name_or_url or "APK File",
+            email_to=user_email,
+            scan_result=scan_result,
+            file_name_or_url=file_name_or_url or "APK File",
             premium=premium,
             payment_ref=payment_ref
         )
@@ -545,7 +549,9 @@ def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None,
     try:
         try:
             scan_result = scan_apk_file(tmp_path, premium=premium, payment_ref=payment_ref)
-            print(f"[DEBUG] File scan raw result for {file_name_or_url}: {scan_result}")
+ if not scan_result:
+    scan_result = {"success": False, "verdict": "Unknown", "message": "Empty scan result", "virustotal": {}}
+
 
             # 🔑 NEW: If VirusTotal gave an analysis_id, poll for final results
             analysis_id = None
@@ -608,7 +614,9 @@ def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None,
         else:
             try:
                 scan_result = scan_url(url_param, premium=premium, payment_ref=payment_ref)
-                print(f"[DEBUG] URL scan result for {file_name_or_url or url_param}: {scan_result}")
+   if not scan_result:
+     scan_result = {"success": False, "verdict": "Unknown", "message": "Empty scan result", "virustotal": {}}
+
 
                 # 🔑 NEW: Poll if analysis_id is present
                 analysis_id = None
@@ -1116,6 +1124,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
