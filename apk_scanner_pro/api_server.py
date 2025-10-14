@@ -476,9 +476,6 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None,
     """
     print(f"[INFO] Finalizing scan for {user_email} | File/URL: {file_name_or_url}")
     print(f"[DEBUG] Raw scan_result: {scan_result}")
-    if not result.get("virustotal"):
-    result["virustotal"] = {"status": "no_data", "message": "Scan completed but no VirusTotal data"}
-
 
     # --- Strict normalization ---
     if not scan_result or not isinstance(scan_result, dict):
@@ -505,14 +502,17 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None,
         scan_result["success"] = False
         print("[WARN] VT data was empty, injecting fallback message.")
 
+    # --- Safe fallback to avoid frontend 'error fetching results' ---
+    if not vt_data:
+        vt_data = {"status": "no_data", "message": "Scan completed but no VirusTotal data"}
+
     # --- Send email with Brevo ---
     email_sent = False
     try:
-        # use the already imported function directly
         email_sent = send_report_via_email(
-            email_to=user_email,
+            to_email=user_email,
             scan_result=scan_result,
-            file_name_or_url=file_name_or_url or "APK File",
+            file_name=file_name_or_url or "APK File",
             premium=premium,
             payment_ref=payment_ref
         )
@@ -544,16 +544,21 @@ def _finalize_scan(scan_result, user_email, file_name_or_url=None,
     return result
 
 
+
 def _scan_job_file(user_email=None, tmp_path=None, file_name_or_url=None,
                    premium=False, payment_ref=None, basic_paid=False):
     try:
         try:
             scan_result = scan_apk_file(tmp_path, premium=premium, payment_ref=payment_ref)
- if not scan_result:
-    scan_result = {"success": False, "verdict": "Unknown", "message": "Empty scan result", "virustotal": {}}
+            if not scan_result:
+                scan_result = {
+                    "success": False,
+                    "verdict": "Unknown",
+                    "message": "Empty scan result",
+                    "virustotal": {}
+                }
 
-
-            # 🔑 NEW: If VirusTotal gave an analysis_id, poll for final results
+            # 🔑 Poll for final results if analysis_id exists
             analysis_id = None
             if isinstance(scan_result, dict):
                 analysis_id = scan_result.get("data", {}).get("id") or scan_result.get("id")
@@ -597,9 +602,17 @@ def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None,
             local = download_apk_to_tmp(url_param)
             try:
                 scan_result = scan_apk_file(local, premium=premium, payment_ref=payment_ref)
+                if not scan_result:
+                    scan_result = {
+                        "success": False,
+                        "verdict": "Unknown",
+                        "message": "Empty scan result",
+                        "virustotal": {}
+                    }
+
                 print(f"[DEBUG] URL file scan result for {file_name_or_url or url_param}: {scan_result}")
 
-                # 🔑 NEW: Poll if analysis_id is present
+                # 🔑 Poll if analysis_id is present
                 analysis_id = None
                 if isinstance(scan_result, dict):
                     analysis_id = scan_result.get("data", {}).get("id") or scan_result.get("id")
@@ -614,11 +627,15 @@ def _scan_job_url(user_email=None, url_param=None, file_name_or_url=None,
         else:
             try:
                 scan_result = scan_url(url_param, premium=premium, payment_ref=payment_ref)
-   if not scan_result:
-     scan_result = {"success": False, "verdict": "Unknown", "message": "Empty scan result", "virustotal": {}}
+                if not scan_result:
+                    scan_result = {
+                        "success": False,
+                        "verdict": "Unknown",
+                        "message": "Empty scan result",
+                        "virustotal": {}
+                    }
 
-
-                # 🔑 NEW: Poll if analysis_id is present
+                # 🔑 Poll if analysis_id is present
                 analysis_id = None
                 if isinstance(scan_result, dict):
                     analysis_id = scan_result.get("data", {}).get("id") or scan_result.get("id")
@@ -1124,6 +1141,7 @@ def page_not_found(e):
 # -------------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
 
 
